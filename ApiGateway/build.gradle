@@ -1,0 +1,76 @@
+plugins {
+    id 'java'
+    // ⬇ Boot 3.3.x 최신으로 (Framework 6.1.15+ 정렬)
+    id 'org.springframework.boot' version '3.3.8'
+    id 'io.spring.dependency-management' version '1.1.6'
+}
+
+group = 'kopo'
+version = '0.0.1-SNAPSHOT'
+description = 'ApiGateway'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    // Spring Cloud 2023.0.6 (Leyton) — Boot 3.3.x와 호환
+    set('springCloudVersion', "2023.0.6")
+}
+
+dependencies {
+    // WebFlux + Security (버전은 Boot가 관리)
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // Spring Cloud (버전 명시 금지: BOM이 정렬)
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
+
+    // JWT
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly   'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly   'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+    // Actuator
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'io.projectreactor:reactor-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+/*
+ * (선택) 정말 급한 상황에서만 사용하는 임시 강제 정렬.
+ * Boot 업그레이드가 어려울 때 주석 해제해서 Framework 6.1.16+로 고정 가능.
+ */
+// configurations.all {
+//     resolutionStrategy {
+//         force "org.springframework:spring-core:6.1.16"
+//         force "org.springframework:spring-beans:6.1.16"
+//         force "org.springframework:spring-web:6.1.16"
+//         force "org.springframework:spring-webflux:6.1.16"
+//     }
+// }
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
