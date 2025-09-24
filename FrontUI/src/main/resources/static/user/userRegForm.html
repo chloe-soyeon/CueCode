@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { max-width: 400px; margin: 40px auto; padding: 24px; border: 1px solid #ccc; border-radius: 8px; }
+        .role-btns { display: flex; gap: 10px; margin-bottom: 16px; }
+        .role-btns button { flex: 1; padding: 10px; font-size: 16px; cursor: pointer; }
+        .active { background: #1976d2; color: #fff; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 4px; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; }
+        .submit-btn { width: 100%; padding: 12px; background: #1976d2; color: #fff; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        .msg { margin-top: 16px; color: #d32f2f; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>회원가입</h2>
+    <div class="role-btns">
+        <button id="patientBtn" class="active">환자</button>
+        <button id="managerBtn">보호자</button>
+    </div>
+    <form id="regForm">
+        <div class="form-group">
+            <label for="user_id">아이디</label>
+            <input type="text" id="user_id" name="user_id" required>
+        </div>
+        <div class="form-group">
+            <label for="user_name">이름</label>
+            <input type="text" id="user_name" name="user_name" required>
+        </div>
+        <div class="form-group">
+            <label for="password">비밀번호</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-group">
+            <label for="email">이메일</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group" id="detectionAreaGroup" style="display:block;">
+            <label>감지 영역 선택</label>
+            <label><input type="radio" name="detectionAreaType" value="hand" checked> 손</label>
+            <label><input type="radio" name="detectionAreaType" value="face"> 얼굴</label>
+            <label><input type="radio" name="detectionAreaType" value="both"> 손+얼굴</label>
+        </div>
+        <button type="submit" class="submit-btn">회원가입</button>
+    </form>
+    <div class="msg" id="msg"></div>
+</div>
+<script>
+    let role = 'patient';
+    document.getElementById('patientBtn').onclick = function() {
+        role = 'patient';
+        this.classList.add('active');
+        document.getElementById('managerBtn').classList.remove('active');
+        document.getElementById('detectionAreaGroup').style.display = 'block';
+    };
+    document.getElementById('managerBtn').onclick = function() {
+        role = 'manager';
+        this.classList.add('active');
+        document.getElementById('patientBtn').classList.remove('active');
+        document.getElementById('detectionAreaGroup').style.display = 'none';
+    };
+
+    document.getElementById('regForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const user_id = document.getElementById('user_id').value;
+        const user_name = document.getElementById('user_name').value;
+        const password = document.getElementById('password').value;
+        const email = document.getElementById('email').value;
+        let url = '';
+        if (role === 'patient') {
+            const detectionAreaType = document.querySelector('input[name="detectionAreaType"]:checked').value;
+            url = `http://localhost:13000/reg/insertPatient?user_id=${encodeURIComponent(user_id)}&user_name=${encodeURIComponent(user_name)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&detectionAreaType=${encodeURIComponent(detectionAreaType)}`;
+        } else {
+            url = `http://localhost:13000/reg/insertManager?user_id=${encodeURIComponent(user_id)}&user_name=${encodeURIComponent(user_name)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}`;
+        }
+        try {
+            const res = await fetch(url, { method: 'POST' });
+            const text = await res.text();
+            document.getElementById('msg').textContent = text.includes('1') ? '회원가입 성공!' : text;
+        } catch (err) {
+            document.getElementById('msg').textContent = '회원가입 요청 실패';
+        }
+    };
+</script>
+</body>
+</html>
