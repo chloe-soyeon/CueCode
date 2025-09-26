@@ -60,11 +60,11 @@ public class LoginController {
         if (userDto instanceof PatientDTO dto) {
             userId = CmmUtil.nvl(dto.id());
             userName = CmmUtil.nvl(dto.name());
-            userRoles = "PATIENT";
+            userRoles = "ROLE_USER"; // 환자 권한
         } else if (userDto instanceof ManagerDTO dto) {
             userId = CmmUtil.nvl(dto.id());
             userName = CmmUtil.nvl(dto.name());
-            userRoles = "MANAGER";
+            userRoles = "ROLE_USER_MANAGER"; // 관리자 권한
         }
         log.info("userId : {}", userId);
         log.info("userName : {}", userName);
@@ -166,14 +166,15 @@ public class LoginController {
         if (userDto instanceof PatientDTO dto) {
             userId = CmmUtil.nvl(dto.id());
             userName = CmmUtil.nvl(dto.name());
-            userRoles = "PATIENT";
+            userRoles = "ROLE_USER"; // 환자 권한
         } else if (userDto instanceof ManagerDTO dto) {
             userId = CmmUtil.nvl(dto.id());
             userName = CmmUtil.nvl(dto.name());
-            userRoles = "MANAGER";
+            userRoles = "ROLE_USER_MANAGER"; // 관리자 권한
         }
         // JWT 토큰 생성 및 쿠키 설정
         String accessToken = jwtTokenProvider.createToken(userId, userRoles, JwtTokenType.ACCESS_TOKEN);
+        log.info("JWT 생성: userId={}, roles={}", userId, userRoles);
         ResponseCookie cookie = ResponseCookie.from(accessTokenName, accessToken)
                 .domain("localhost")
                 .path("/")
