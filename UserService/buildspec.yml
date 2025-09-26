@@ -1,0 +1,23 @@
+# buildspec.yml
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto17
+  pre_build:
+    commands:
+      - echo "권한 설정"
+      - chmod +x ./gradlew
+  build:
+    commands:
+      - echo "빌드 시작"
+      - ./gradlew build
+  post_build:
+    commands:
+      - echo "빌드 완료"
+
+artifacts:
+  files:
+    - build/libs/*.jar
+  discard-paths: yes
