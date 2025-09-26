@@ -46,7 +46,8 @@ public class SecurityConfig {
                         "/actuator/**",
                         "/swagger-ui/**", "/v3/api-docs/**"
                 ).permitAll()
-                .pathMatchers("/user/**").hasAnyAuthority("ROLE_USER")
+                .pathMatchers("/user/dashboard").hasAuthority("ROLE_USER_MANAGER") // 보호자만 접근
+                .pathMatchers("/user/**").hasAuthority("ROLE_USER")         // 환자만 접근
                 .anyExchange().permitAll()
         );
         http.addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.HTTP_BASIC);
@@ -60,7 +61,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:14000"));
+        config.setAllowedOrigins(List.of("http://localhost:14000","http://localhost:13000"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowCredentials(true);

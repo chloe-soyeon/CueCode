@@ -45,7 +45,7 @@ public class JwtTokenProvider {
         Claims claims = Jwts.claims()
                 .setIssuer(creator)
                 .setSubject(userId);          // PK
-        claims.put("role", role);             // MANAGER / PATIENT
+        claims.put("roles", role);           // MANAGER / PATIENT (roles로 수정)
 
         Date now = new Date();
         SecretKey secret = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKeyBase64));
@@ -66,7 +66,7 @@ public class JwtTokenProvider {
 
         return TokenDTO.builder()
                 .userId(CmmUtil.nvl(claims.getSubject()))
-                .role(CmmUtil.nvl((String) claims.get("role")))
+                .role(CmmUtil.nvl((String) claims.get("roles"))) // "role" → "roles"로 수정
                 .build();
     }
 
