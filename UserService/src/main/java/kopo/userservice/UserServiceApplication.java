@@ -6,7 +6,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 @EnableDiscoveryClient
 @SpringBootApplication
-//Pipeline test4
+//Pipeline test5
 public class UserServiceApplication {
 
 	public static void main(String[] args) {
