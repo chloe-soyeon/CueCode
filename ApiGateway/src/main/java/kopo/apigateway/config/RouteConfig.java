@@ -40,6 +40,14 @@ public class RouteConfig {
                         .filters(f -> f.rewritePath("/user/dashboard", "/user/dashboard.html"))
                         .uri("http://localhost:14000"))
 
+                // Motion-detector 페이지 라우팅
+                .route("front-ui-motion-detector", r -> r
+                        .path("/motion")
+                        .and()
+                        .method(HttpMethod.GET)
+                        .filters(f -> f.rewritePath("/motion", "/motion/motion-detector.html"))
+                        .uri("http://localhost:14000"))
+
                 // UserService가 처리하는 로그인 POST 요청을 라우팅합니다.
                 .route("user-service-login-post", r -> r
                         .path("/login")

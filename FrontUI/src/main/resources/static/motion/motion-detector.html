@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>MotionLink Demo v0.4 - Recording</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+        #container { position: relative; width: 640px; height: 480px; border: 2px solid #333; }
+        #webcam { width: 100%; height: 100%; transform: scaleX(-1); }
+        #output_canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+        .status-container { margin-top: 10px; text-align: center; }
+        #status { font-size: 1.2em; font-weight: bold; color: #333; min-height: 1.2em; }
+        #ws_status, #recordStatus { font-size: 1em; color: #666; }
+        #recordButton { margin-top: 15px; padding: 10px 20px; font-size: 1em; background-color: #4F46E5; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        #recordButton:disabled { background-color: #999; cursor: not-allowed; }
+    </style>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.js"></script>
+</head>
+<body>
+    <h1>MotionLink 실시간 동작 인식 데모 (v0.4 - 녹화)</h1>
+    <div id="container">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="output_canvas"></canvas>
+    </div>
+    <div class="status-container">
+        <div id="status">상태: 초기화 중...</div>
+        <div id="ws_status">WS: 연결 안됨</div>
+        <div id="recordStatus">녹화: 대기 중</div>
+    </div>
+    <button id="recordButton">3초 녹화 시작</button>
+
+    <script type="module">
+        // === 설정 값 ===
+        const WEBSOCKET_URL = "ws://localhost:8000/ws/motion";
+        const SEND_INTERVAL_MS = 100; // 실시간 전송 간격
+        const RECORDING_DURATION_MS = 3000; // 녹화 시간
+
+        // === 전역 변수 ===
+        const video = document.getElementById("webcam");
+        const canvasElement = document.getElementById("output_canvas");
+        const canvasCtx = canvasElement.getContext("2d");
+        const statusDiv = document.getElementById("status");
+        const wsStatusDiv = document.getElementById("ws_status");
+        const recordStatusDiv = document.getElementById("recordStatus");
+        const recordButton = document.getElementById("recordButton");
+
+        const { FaceLandmarker, HandLandmarker, FilesetResolver, DrawingUtils } = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.js");
+
+        let faceLandmarker, handLandmarker, drawingUtils, socket;
+        let lastVideoTime = -1, lastSendTime = 0;
+        let isRecording = false, recordedFrames = [];
+
+        // === WebSocket 설정 ===
+        function initWebSocket() {
+            console.log(`[WS] 연결 시도... (${WEBSOCKET_URL})`);
+            wsStatusDiv.textContent = `WS: 연결 시도...`;
+            socket = new WebSocket(WEBSOCKET_URL);
+            socket.onopen = () => { console.log("[WS] 연결 성공!"); wsStatusDiv.textContent = "WS: 연결됨"; };
+            socket.onmessage = (event) => { console.log("[WS] 서버로부터 메시지 수신:", event.data); statusDiv.textContent = `서버 응답: ${event.data}`; };
+            socket.onclose = () => { console.warn("[WS] 연결이 닫혔습니다. 3초 후 재연결 시도..."); wsStatusDiv.textContent = "WS: 연결 끊김"; setTimeout(initWebSocket, 3000); };
+            socket.onerror = (error) => { console.error("[WS] 오류 발생:", error); wsStatusDiv.textContent = "WS: 오류"; socket.close(); };
+        }
+
+        // === 데이터 처리 및 전송 로직 ===
+        function processAndGetData(faceResults, handResults) {
+            const faceBlendshapes = faceResults.faceBlendshapes.length > 0 
+                ? Object.fromEntries(faceResults.faceBlendshapes[0].categories.map(c => [c.categoryName, c.score]))
+                : {};
+
+            const getHandData = (handednesses, landmarks, handName) => {
+                const handIndex = handednesses.findIndex(h => h[0].categoryName === handName);
+                return handIndex > -1 ? landmarks[handIndex].map(p => [p.x, p.y, p.z]) : null;
+            };
+
+            return {
+                timestamp_ms: Date.now(),
+                face_blendshapes: faceBlendshapes,
+                left_hand_landmarks: getHandData(handResults.handednesses, handResults.landmarks, 'Left'),
+                right_hand_landmarks: getHandData(handResults.handednesses, handResults.landmarks, 'Right')
+            };
+        }
+
+        function sendData(data) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(data));
+            }
+        }
+
+        // === 녹화 로직 ===
+        recordButton.addEventListener('click', () => {
+            if (isRecording) return;
+            isRecording = true;
+            recordedFrames = [];
+            recordButton.disabled = true;
+            recordStatusDiv.textContent = "녹화 중... (3초)";
+            console.log("[Record] 3초 녹화를 시작합니다.");
+
+            setTimeout(() => {
+                isRecording = false;
+                recordButton.disabled = false;
+                recordStatusDiv.textContent = `녹화 완료! 총 ${recordedFrames.length} 프레임 수집.`;
+                console.log("[Record] 녹화 완료. 수집된 데이터:", recordedFrames);
+            }, RECORDING_DURATION_MS);
+        });
+
+        // === MediaPipe 초기화 및 웹캠 실행 ===
+        async function createLandmarkers() {
+            const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
+            drawingUtils = new DrawingUtils(canvasCtx);
+            faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`, delegate: "GPU" },
+                outputFaceBlendshapes: true, runningMode: "VIDEO", numFaces: 1
+            });
+            handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`, delegate: "GPU" },
+                runningMode: "VIDEO", numHands: 2
+            });
+            statusDiv.textContent = "상태: 웹캠 로딩 중...";
+        }
+
+        function enableCam() {
+            navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+                video.srcObject = stream;
+                video.addEventListener("loadeddata", predictWebcam);
+            }).catch((err) => {
+                console.error("Error accessing webcam: ", err);
+                statusDiv.textContent = "오류: 웹캠 접근에 실패했습니다. 권한을 확인해주세요.";
+            });
+        }
+        
+        let lastPredictTime = -1;
+        async function predictWebcam(time) {
+            if(video.currentTime === lastPredictTime) {
+                window.requestAnimationFrame(predictWebcam);
+                return;
+            }
+            lastPredictTime = video.currentTime;
+
+            const startTimeMs = performance.now();
+            const faceResults = faceLandmarker.detectForVideo(video, startTimeMs);
+            const handResults = handLandmarker.detectForVideo(video, startTimeMs);
+            const currentFrameData = processAndGetData(faceResults, handResults);
+
+            if (startTimeMs - lastSendTime > SEND_INTERVAL_MS) {
+                lastSendTime = startTimeMs;
+                sendData(currentFrameData);
+            }
+
+            if (isRecording) {
+                recordedFrames.push(currentFrameData);
+            }
+
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            if (faceResults.faceLandmarks) {
+                for (const landmarks of faceResults.faceLandmarks) {
+                    drawingUtils.drawConnectors(landmarks, FaceLandmarker.FACE_LANDMARKS_TESSELATION, { color: "#C0C0C070", lineWidth: 1 });
+                }
+            }
+            if (handResults.landmarks) {
+                for (const landmarks of handResults.landmarks) {
+                    drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, { color: "#00FF00", lineWidth: 5 });
+                    drawingUtils.drawLandmarks(landmarks, { color: "#FF0000", lineWidth: 2 });
+                }
+            }
+            window.requestAnimationFrame(predictWebcam);
+        }
+        
+        // === 실행 시작 ===
+        async function main() {
+            await createLandmarkers();
+            enableCam();
+            initWebSocket();
+        }
+
+        main();
+
+    </script>
+</body>
+</html>
