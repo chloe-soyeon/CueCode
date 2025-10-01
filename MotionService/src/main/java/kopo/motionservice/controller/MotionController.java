@@ -1,6 +1,7 @@
 package kopo.motionservice.controller;
 
 import kopo.motionservice.dto.MotionRecordRequestDTO;
+import kopo.motionservice.service.IMotionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -15,18 +16,22 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MotionController {
 
-    // private final IMotionService motionService; // 서비스 계층은 다음 단계에서 추가
+    private final IMotionService motionService;
 
     @PostMapping("/register")
     public ResponseEntity<String> registerMotion(@RequestBody MotionRecordRequestDTO requestDTO) {
-        log.info("[MotionController] Received motion registration request");
+        log.info("[MotionController] Received motion registration request for phrase: {}", requestDTO.getPhrase());
 
-        // TODO: 다음 단계에서 서비스 계층을 호출하여 실제 저장 로직 수행
-        // motionService.registerMotion(requestDTO);
+        // [DEBUG] DTO의 motionData가 null인지 확인
+        if (requestDTO.getMotionData() == null) {
+            log.error("[DEBUG-Controller] motionData is NULL after JSON parsing!");
+        } else {
+            log.info("[DEBUG-Controller] motionData is NOT null. face_blendshapes count: {}", 
+                requestDTO.getMotionData().getFaceBlendshapes() != null ? requestDTO.getMotionData().getFaceBlendshapes().size() : "null");
+        }
 
-        log.info("Label: {}", requestDTO.getLabel());
-        log.info("Number of frames: {}", requestDTO.getFrames().size());
+        motionService.saveRecordedMotion(requestDTO);
 
-        return ResponseEntity.ok("Motion registration request received.");
+        return ResponseEntity.ok("Motion registered successfully.");
     }
 }
