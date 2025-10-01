@@ -1,6 +1,7 @@
 package kopo.motionservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -11,20 +12,52 @@ import java.util.Map;
 @Getter
 @Setter
 @NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true) // 프론트에서 보내는 JSON에 없는 필드는 무시
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MotionRecordRequestDTO {
 
-    private String label; // "안녕하세요" 등 동작에 부여할 이름
-    private List<FrameDataDTO> frames; // 녹화된 프레임 데이터 묶음
+    // "hello" 등 사용자가 입력한 문구 (label에서 phrase로 변경)
+    private String phrase;
+
+    @JsonProperty("motion_type")
+    private String motionType; // "face_and_hand"
+
+    @JsonProperty("motion_data")
+    private MotionDataDTO motionData;
 
     @Getter
     @Setter
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class FrameDataDTO {
-        private long timestamp_ms;
-        private Map<String, Double> face_blendshapes;
-        private List<List<Double>> left_hand_landmarks;
-        private List<List<Double>> right_hand_landmarks;
+    public static class MotionDataDTO {
+        @JsonProperty("face_blendshapes")
+        private List<FaceBlendshapesFrameDTO> faceBlendshapes;
+
+        @JsonProperty("hand_landmarks")
+        private List<HandLandmarksFrameDTO> handLandmarks;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class FaceBlendshapesFrameDTO {
+        @JsonProperty("timestamp_ms")
+        private long timestampMs;
+        private Map<String, Double> values;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class HandLandmarksFrameDTO {
+        @JsonProperty("timestamp_ms")
+        private long timestampMs;
+
+        @JsonProperty("right_hand")
+        private List<List<Double>> rightHand;
+
+        @JsonProperty("left_hand")
+        private List<List<Double>> leftHand;
     }
 }

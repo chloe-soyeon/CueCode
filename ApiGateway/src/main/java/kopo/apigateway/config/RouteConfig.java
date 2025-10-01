@@ -62,6 +62,11 @@ public class RouteConfig {
                 .route("user-service-reg", r -> r
                         .path("/reg/**")
                         .uri("http://localhost:11000"))
+
+                // MotionService 라우팅
+                .route("motion-service", r -> r
+                        .path("/motions/**")
+                        .uri("http://localhost:15000"))
                 .build();
     }
 }
