@@ -56,11 +56,12 @@ public class JwtTokenProvider {
     }
 
     // JWT 토큰 생성
-    public String createToken(String userId, String roles) {
+    public String createToken(String userId, String roles, String managerId) {
         Claims claims = Jwts.claims()
                 .setIssuer(creator)
                 .setSubject(userId);
         claims.put("roles", roles);
+        claims.put("managerId", managerId); // managerId 클레임 추가
         Date now = new Date();
         return Jwts.builder()
                 .setClaims(claims)
@@ -75,13 +76,14 @@ public class JwtTokenProvider {
         Claims claims = Jwts.parserBuilder().setSigningKey(secret).build().parseClaimsJws(token).getBody();
         String userId = nvl(claims.getSubject());
         String role = nvl((String) claims.get("roles"));
-        return TokenDTO.builder().userId(userId).role(role).build();
+        String managerId = nvl((String) claims.get("managerId")); // managerId 클레임 추출
+        return TokenDTO.builder().userId(userId).role(role).managerId(managerId).build();
     }
 
     // 인증 객체 생성
     public Authentication getAuthentication(String token) {
         TokenDTO rDTO = getTokenInfo(token);
-        String userId = nvl(rDTO.userId());
+        String managerId = nvl(rDTO.managerId()); // managerId 추출
         String roles = nvl(rDTO.role());
         Set<GrantedAuthority> pSet = new HashSet<>();
         if (!roles.isEmpty()) {
@@ -89,7 +91,7 @@ public class JwtTokenProvider {
                 pSet.add(new SimpleGrantedAuthority(role));
             }
         }
-        return new UsernamePasswordAuthenticationToken(userId, "", pSet);
+        return new UsernamePasswordAuthenticationToken(managerId, "", pSet); // managerId를 Principal 이름으로 사용
     }
 
     // 쿠키/헤더에서 토큰 추출

@@ -5,8 +5,8 @@ import kopo.userservice.dto.ManagerDTO;
 import kopo.userservice.repository.PatientRepository;
 import kopo.userservice.repository.ManagerRepository;
 import kopo.userservice.repository.DetectionAreaRepository;
-import kopo.userservice.repository.document.PatientDocument;
-import kopo.userservice.repository.document.ManagerDocument;
+import kopo.userservice.model.PatientDocument;
+import kopo.userservice.model.ManagerDocument;
 import kopo.userservice.repository.document.DetectionAreaDocument;
 import kopo.userservice.service.IUserService;
 import kopo.userservice.util.CmmUtil;
@@ -158,7 +158,13 @@ public class UserService implements IUserService {
         if (entity.isPresent()) {
             PatientDocument e = entity.get();
             log.info("getPatient 조회 성공: {}", e);
-            return new PatientDTO(e.getId(), e.getPw(), e.getEmail(), e.getName(), e.getManagerIds(), null);
+            return PatientDTO.builder()
+                    .id(e.getId())
+                    .pw(e.getPw())
+                    .email(e.getEmail())
+                    .name(e.getName())
+                    .managerIds(e.getManagerIds())
+                    .build();
         }
         log.info("getPatient 조회 실패: 아이디 {} 없음", id);
         return null;
@@ -178,3 +184,4 @@ public class UserService implements IUserService {
         return null;
     }
 }
+
