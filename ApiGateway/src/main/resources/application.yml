@@ -22,7 +22,6 @@ spring:
           uri: http://localhost:11000
           predicates:
             - Path=/reg/**
-          # StripPrefix 미적용
 
 logging:
   level:

@@ -54,6 +54,34 @@ public class RouteConfig {
                 .route("user-service-reg", r -> r
                         .path("/reg/**")
                         .uri("http://localhost:11000"))
+
+                // /patient/list 경로를 UserService로 프록시하는 라우팅 추가
+                .route("user-service-patient-list", r -> r
+                        .path("/patient/list")
+                        .and()
+                        .method(HttpMethod.GET)
+                        .uri("http://localhost:11000"))
+
+                // /patient/detail 경로를 UserService로 프록시하는 라우팅 추가
+                .route("user-service-patient-detail", r -> r
+                        .path("/patient/detail")
+                        .and()
+                        .method(HttpMethod.GET)
+                        .uri("http://localhost:11000"))
+
+                // /manager/addPatient 경로의 POST 요청을 UserService로 프록시하는 라우팅 추가
+                .route("user-service-manager-add-patient", r -> r
+                        .path("/manager/addPatient")
+                        .and()
+                        .method(HttpMethod.POST)
+                        .uri("http://localhost:11000"))
+
+                // /patient/update 경로의 POST 요청을 UserService로 프록시하는 라우팅 추가
+                .route("user-service-patient-update", r -> r
+                        .path("/patient/update")
+                        .and()
+                        .method(HttpMethod.POST)
+                        .uri("http://localhost:11000"))
                 .build();
     }
 }

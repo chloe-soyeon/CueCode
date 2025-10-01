@@ -47,6 +47,8 @@ public class SecurityConfig {
                         "/swagger-ui/**", "/v3/api-docs/**"
                 ).permitAll()
                 .pathMatchers("/user/dashboard").hasAuthority("ROLE_USER_MANAGER") // 보호자만 접근
+                .pathMatchers("/patient/list").hasAuthority("ROLE_USER_MANAGER") // 보호자만 접근
+                .pathMatchers("/user/me").hasAnyAuthority("ROLE_USER_MANAGER", "ROLE_USER") // 보호자와 환자 모두 접근
                 .pathMatchers("/user/**").hasAuthority("ROLE_USER")         // 환자만 접근
                 .anyExchange().permitAll()
         );
