@@ -58,6 +58,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**", // Swagger API docs
                                 "/actuator/**" // actuator
                                 , "/user/**" // 정적 리소스 및 회원가입 페이지
+                                , "/patient/**"
+                                , "/manager/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/reg/**").permitAll() // ✅ 이 줄을 추가
                         .anyRequest().authenticated()
