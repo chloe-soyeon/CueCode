@@ -40,6 +40,14 @@ public class RouteConfig {
                         .filters(f -> f.rewritePath("/user/dashboard", "/user/dashboard.html"))
                         .uri("http://localhost:14000"))
 
+                // Motion-detector 페이지 라우팅
+                .route("front-ui-motion-detector", r -> r
+                        .path("/motion")
+                        .and()
+                        .method(HttpMethod.GET)
+                        .filters(f -> f.rewritePath("/motion", "/motion/motion-detector.html"))
+                        .uri("http://localhost:14000"))
+
                 // UserService가 처리하는 로그인 POST 요청을 라우팅합니다.
                 .route("user-service-login-post", r -> r
                         .path("/login")
@@ -55,33 +63,10 @@ public class RouteConfig {
                         .path("/reg/**")
                         .uri("http://localhost:11000"))
 
-                // /patient/list 경로를 UserService로 프록시하는 라우팅 추가
-                .route("user-service-patient-list", r -> r
-                        .path("/patient/list")
-                        .and()
-                        .method(HttpMethod.GET)
-                        .uri("http://localhost:11000"))
-
-                // /patient/detail 경로를 UserService로 프록시하는 라우팅 추가
-                .route("user-service-patient-detail", r -> r
-                        .path("/patient/detail")
-                        .and()
-                        .method(HttpMethod.GET)
-                        .uri("http://localhost:11000"))
-
-                // /manager/addPatient 경로의 POST 요청을 UserService로 프록시하는 라우팅 추가
-                .route("user-service-manager-add-patient", r -> r
-                        .path("/manager/addPatient")
-                        .and()
-                        .method(HttpMethod.POST)
-                        .uri("http://localhost:11000"))
-
-                // /patient/update 경로의 POST 요청을 UserService로 프록시하는 라우팅 추가
-                .route("user-service-patient-update", r -> r
-                        .path("/patient/update")
-                        .and()
-                        .method(HttpMethod.POST)
-                        .uri("http://localhost:11000"))
+                // MotionService 라우팅
+                .route("motion-service", r -> r
+                        .path("/motions/**")
+                        .uri("http://localhost:15000"))
                 .build();
     }
 }
