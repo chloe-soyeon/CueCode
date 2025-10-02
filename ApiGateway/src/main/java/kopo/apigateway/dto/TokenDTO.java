@@ -6,7 +6,8 @@ import lombok.Builder;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public record TokenDTO(
-        String userId //회원 아이디
-        , String role //토큰에 저장되는 권한
+        String userId, //회원 아이디
+        String role, //토큰에 저장되는 권한
+        String managerId //매니저 아이디
 ) {
 }

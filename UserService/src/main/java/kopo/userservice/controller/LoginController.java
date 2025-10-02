@@ -57,6 +57,7 @@ public class LoginController {
         String userId = "";
         String userName = "";
         String userRoles = "";
+        String managerId = "";
         if (userDto instanceof PatientDTO dto) {
             userId = CmmUtil.nvl(dto.id());
             userName = CmmUtil.nvl(dto.name());
@@ -65,13 +66,15 @@ public class LoginController {
             userId = CmmUtil.nvl(dto.id());
             userName = CmmUtil.nvl(dto.name());
             userRoles = "ROLE_USER_MANAGER"; // 관리자 권한
+            managerId = CmmUtil.nvl(dto.id()); // managerId 값 추출
         }
         log.info("userId : {}", userId);
         log.info("userName : {}", userName);
         log.info("userRoles : {}", userRoles);
+        log.info("managerId : {}", managerId); // managerId 값 로그 추가
 
         // Access Token 생성
-        String accessToken = jwtTokenProvider.createToken(userId, userRoles, JwtTokenType.ACCESS_TOKEN);
+        String accessToken = jwtTokenProvider.createToken(userId, userRoles, managerId, JwtTokenType.ACCESS_TOKEN);
         log.info("accessToken : {}", accessToken);
 
         ResponseCookie cookie = ResponseCookie.from(accessTokenName, accessToken)
@@ -83,7 +86,7 @@ public class LoginController {
         response.setHeader("Set-Cookie", cookie.toString());
 
         // Refresh Token 생성
-        String refreshToken = jwtTokenProvider.createToken(userId, userRoles, JwtTokenType.REFRESH_TOKEN);
+        String refreshToken = jwtTokenProvider.createToken(userId, userRoles, managerId, JwtTokenType.REFRESH_TOKEN);
         log.info("refreshToken : {}", refreshToken);
         cookie = ResponseCookie.from(refreshTokenName, refreshToken)
                 .domain("localhost")
@@ -163,6 +166,7 @@ public class LoginController {
         String userId = "";
         String userName = "";
         String userRoles = "";
+        String managerId = "";
         if (userDto instanceof PatientDTO dto) {
             userId = CmmUtil.nvl(dto.id());
             userName = CmmUtil.nvl(dto.name());
@@ -171,9 +175,10 @@ public class LoginController {
             userId = CmmUtil.nvl(dto.id());
             userName = CmmUtil.nvl(dto.name());
             userRoles = "ROLE_USER_MANAGER"; // 관리자 권한
+            managerId = CmmUtil.nvl(dto.id()); // managerId 값 추출
         }
         // JWT 토큰 생성 및 쿠키 설정
-        String accessToken = jwtTokenProvider.createToken(userId, userRoles, JwtTokenType.ACCESS_TOKEN);
+        String accessToken = jwtTokenProvider.createToken(userId, userRoles, managerId, JwtTokenType.ACCESS_TOKEN);
         log.info("JWT 생성: userId={}, roles={}", userId, userRoles);
         ResponseCookie cookie = ResponseCookie.from(accessTokenName, accessToken)
                 .domain("localhost")
@@ -182,7 +187,7 @@ public class LoginController {
                 .httpOnly(true)
                 .build();
         response.setHeader("Set-Cookie", cookie.toString());
-        String refreshToken = jwtTokenProvider.createToken(userId, userRoles, JwtTokenType.REFRESH_TOKEN);
+        String refreshToken = jwtTokenProvider.createToken(userId, userRoles, managerId, JwtTokenType.REFRESH_TOKEN);
         cookie = ResponseCookie.from(refreshTokenName, refreshToken)
                 .domain("localhost")
                 .path("/")

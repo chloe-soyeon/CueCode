@@ -67,6 +67,14 @@ public class RouteConfig {
                 .route("motion-service", r -> r
                         .path("/motions/**")
                         .uri("http://localhost:15000"))
+                // Patient-service 라우팅 추가
+                .route("patient-service", r -> r
+                        .path("/patient/**")
+                        .uri("http://localhost:11000"))
+                // Manager-service 라우팅 추가
+                .route("manager-service", r -> r
+                        .path("/manager/**")
+                        .uri("http://localhost:11000"))
                 .build();
     }
 }
