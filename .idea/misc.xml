@@ -5,6 +5,7 @@
     <file type="web" url="file://$PROJECT_DIR$/ApiGateway" />
     <file type="web" url="file://$PROJECT_DIR$/EurekaServer" />
     <file type="web" url="file://$PROJECT_DIR$/FrontUI" />
+    <file type="web" url="file://$PROJECT_DIR$/MotionService" />
     <file type="web" url="file://$PROJECT_DIR$/SpringConfigServer" />
     <file type="web" url="file://$PROJECT_DIR$/UserService" />
   </component>

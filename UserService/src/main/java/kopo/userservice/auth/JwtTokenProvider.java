@@ -38,7 +38,7 @@ public class JwtTokenProvider {
     @Value("${jwt.token.refresh.name}")        private String refreshTokenName;
 
     /** JWT 생성 */
-    public String createToken(String userId, String role, JwtTokenType tokenType) {
+    public String createToken(String userId, String role, String managerId, JwtTokenType tokenType) {
 
         long validSec = (tokenType == JwtTokenType.ACCESS_TOKEN) ? accessValidSec : refreshValidSec;
 
@@ -46,6 +46,7 @@ public class JwtTokenProvider {
                 .setIssuer(creator)
                 .setSubject(userId);          // PK
         claims.put("roles", role);           // MANAGER / PATIENT (roles로 수정)
+        claims.put("managerId", managerId);  // managerId 클레임 추가
 
         Date now = new Date();
         SecretKey secret = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKeyBase64));

@@ -53,6 +53,9 @@
                         if (data.accessToken) {
                             document.cookie = `accessToken=${data.accessToken}; path=/;`;
                         }
+                        // 임시: 모든 로그인 성공 시 managerId 저장
+                        localStorage.setItem('managerId', userId);
+                        console.log('로그인 성공, managerId 저장:', userId);
                         msgElement.textContent = '로그인 성공!';
                         setTimeout(() => {
                             window.location.href = 'http://localhost:13000/user/dashboard';

@@ -40,6 +40,14 @@ public class RouteConfig {
                         .filters(f -> f.rewritePath("/user/dashboard", "/user/dashboard.html"))
                         .uri("http://localhost:14000"))
 
+                // Motion-detector 페이지 라우팅
+                .route("front-ui-motion-detector", r -> r
+                        .path("/motion")
+                        .and()
+                        .method(HttpMethod.GET)
+                        .filters(f -> f.rewritePath("/motion", "/motion/motion-detector.html"))
+                        .uri("http://localhost:14000"))
+
                 // UserService가 처리하는 로그인 POST 요청을 라우팅합니다.
                 .route("user-service-login-post", r -> r
                         .path("/login")
@@ -53,6 +61,19 @@ public class RouteConfig {
                         .uri("http://localhost:11000"))
                 .route("user-service-reg", r -> r
                         .path("/reg/**")
+                        .uri("http://localhost:11000"))
+
+                // MotionService 라우팅
+                .route("motion-service", r -> r
+                        .path("/motions/**")
+                        .uri("http://localhost:15000"))
+                // Patient-service 라우팅 추가
+                .route("patient-service", r -> r
+                        .path("/patient/**")
+                        .uri("http://localhost:11000"))
+                // Manager-service 라우팅 추가
+                .route("manager-service", r -> r
+                        .path("/manager/**")
                         .uri("http://localhost:11000"))
                 .build();
     }
