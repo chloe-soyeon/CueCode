@@ -1,21 +1,21 @@
-#spring:
-#  application:
-#    name: motion-service   # Config repo 파일명(user-dev.yml)과 매칭
-#  profiles:
-#    active: dev  # 여기서 dev 활성화
-#  config:
-#    import: "optional:configserver:http://localhost:8888/"
-#server:
-#  port: 15000
+spring:
+  application:
+    name: motion   # Config repo 파일명(user-dev.yml)과 매칭
+  profiles:
+    active: dev  # 여기서 dev 활성화
+  config:
+    import: "optional:configserver:http://localhost:8888/"
+server:
+  port: 15000
 #  address: 0.0.0.0
 
 
-server:
-  port: 15000
+#server:
+#  port: 15000
 
-spring:
-  application:
-    name: motion
-  data:
-    mongodb:
-      uri: mongodb://poly:poly1234@localhost:27017/motionDB
+#spring:
+#  application:
+#    name: motion
+#  data:
+#    mongodb:
+#      uri: mongodb://poly:poly1234@localhost:27017/motionDB
