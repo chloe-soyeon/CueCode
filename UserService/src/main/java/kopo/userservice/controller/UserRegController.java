@@ -9,12 +9,17 @@ import kopo.userservice.dto.PatientDTO;
 import kopo.userservice.service.IUserService;
 import kopo.userservice.util.CmmUtil;
 import kopo.userservice.util.EncryptUtil;
+import kopo.userservice.util.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @Tag(name = "회원가입을 위한 API", description = "회원가입을 위한 API 설명입니다.")
 @Slf4j
@@ -24,6 +29,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserRegController {
     private final IUserService userService;
     private final PasswordEncoder bCryptPasswordEncoder;
+
+    @Autowired
+    private RedisUtil redisUtil;
 
     @Operation(summary = "환자 회원가입 API", description = "환자 회원가입 API",
             responses = {
@@ -234,5 +242,139 @@ public class UserRegController {
             log.info(this.getClass().getName() + ".userManagerInfo End!");
         }
         return dto;
+    }
+
+    @Operation(summary = "아이디 중복확인 API", description = "아이디 중복확인 API",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "OK"),
+                    @ApiResponse(responseCode = "404", description = "Page Not Found!"),
+            }
+    )
+    @RequestMapping(value = "checkUserId", method = org.springframework.web.bind.annotation.RequestMethod.GET)
+    public java.util.Map<String, Object> checkUserId(HttpServletRequest request) {
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        try {
+            String userId = kopo.userservice.util.CmmUtil.nvl(request.getParameter("user_id"));
+            log.info("[checkUserId] user_id 파라미터: {}", userId);
+            if (userId == null || userId.isBlank()) {
+                result.put("available", false);
+                result.put("error", "user_id 파라미터가 비어있음");
+                return result;
+            }
+            boolean available = !userService.existsUserId(userId);
+            result.put("available", available);
+        } catch (Exception e) {
+            log.error("[checkUserId] 예외 발생", e);
+            result.put("available", false);
+            result.put("error", e.getMessage());
+        }
+        return result;
+    }
+
+    @Operation(summary = "인증메일 발송 API", description = "이메일 인증을 위한 메일을 발송합니다.")
+    @PostMapping(value = "sendMail")
+    public MsgDTO sendMail(@RequestBody Map<String, String> req) {
+        log.info(this.getClass().getName() + ".sendMail start!");
+        String email = req.getOrDefault("email", "").trim();
+        if (email.isEmpty()) {
+            log.warn("[sendMail] 이메일 파라미터가 비어 있습니다.");
+            return MsgDTO.builder().result(0).msg("이메일 주소가 입력되지 않았습니다.").build();
+        }
+        int res;
+        String msg;
+        try {
+            int authCode = userService.sendEmailAuthCode(email);
+            res = 1;
+            msg = "메일 발송 성공, 인증번호: " + authCode;
+        } catch (Exception e) {
+            res = 0;
+            msg = "메일 발송 실패: " + e.getMessage();
+        }
+        return MsgDTO.builder().result(res).msg(msg).build();
+    }
+
+    @PostMapping(value = "sendEmailAuth")
+    public MsgDTO sendEmailAuth(HttpServletRequest request) {
+        log.info(this.getClass().getName() + ".sendEmailAuth start!");
+
+        // 원본 이메일 로깅
+        String originalEmail = CmmUtil.nvl(request.getParameter("email"));
+        log.info("[sendEmailAuth] 원본 이메일: {}", originalEmail);
+
+        // 이메일 정규화 및 로깅
+        String normalizedEmail = originalEmail.trim().toLowerCase();
+        log.info("[sendEmailAuth] 정규화된 이메일: {}", normalizedEmail);
+
+        String key = "emailAuth:" + normalizedEmail;
+        int authCode;
+        String msg;
+        try {
+            authCode = userService.sendEmailAuthCode(normalizedEmail);
+            log.info("[sendEmailAuth] Redis 저장 key: {} / value: {}", key, authCode);
+
+            // 저장 확인
+            String savedValue = redisUtil.get(key);
+            log.info("[sendEmailAuth] Redis 저장 확인: {} = {}", key, savedValue);
+
+            msg = "메일 발송 성공";
+        } catch (Exception e) {
+            log.error("[sendEmailAuth] 인증번호 발송 실패", e);
+            msg = "메일 발송 실패: " + e.getMessage();
+            return MsgDTO.builder().result(0).msg(msg).build();
+        }
+        return MsgDTO.builder().result(1).msg(msg).build();
+    }
+
+    @PostMapping(value = "verifyEmailAuth")
+    public MsgDTO verifyEmailAuth(HttpServletRequest request, @RequestBody(required = false) Map<String, String> body) {
+        log.info(this.getClass().getName() + ".verifyEmailAuth start!");
+
+        // 이메일 정보 처리 - form 파라미터 또는 JSON 바디에서 가져옴
+        String originalEmail;
+        String inputCode;
+
+        // RequestBody로 들어온 경우
+        if (body != null && !body.isEmpty()) {
+            originalEmail = CmmUtil.nvl(body.get("email"));
+            inputCode = CmmUtil.nvl(body.get("authCode"));
+            log.info("[verifyEmailAuth] RequestBody로 받은 파라미터: email={}, authCode={}", originalEmail, inputCode);
+        } else {
+            // form 파라미터로 들어온 경우
+            originalEmail = CmmUtil.nvl(request.getParameter("email"));
+            inputCode = CmmUtil.nvl(request.getParameter("authCode"));
+            log.info("[verifyEmailAuth] form 파라미터로 받은 파라미터: email={}, authCode={}", originalEmail, inputCode);
+        }
+
+        log.info("[verifyEmailAuth] 원본 이메일: {}", originalEmail);
+
+        // 이메일 정규화 및 로깅
+        String normalizedEmail = originalEmail.trim().toLowerCase();
+        log.info("[verifyEmailAuth] 정규화된 이메일: {}", normalizedEmail);
+        log.info("[verifyEmailAuth] 입력된 인증번호: {}", inputCode);
+
+        String key = "emailAuth:" + normalizedEmail;
+        log.info("[verifyEmailAuth] 조회할 Redis 키: {}", key);
+
+        String redisCode = redisUtil.get(key);
+        log.info("[verifyEmailAuth] Redis 조회 결과: {} = {}", key, redisCode);
+
+        String msg;
+        int result = 0;
+        if (redisCode == null) {
+            log.warn("[verifyEmailAuth] 인증번호가 Redis에 없음 (만료 또는 저장 실패)");
+            msg = "인증번호가 만료되었거나 존재하지 않습니다. 인증번호를 다시 요청해주세요.";
+        } else if (inputCode.equals(redisCode) || String.valueOf(Integer.parseInt(inputCode)).equals(redisCode)) {
+            // 문자열 비교와 숫자 변환 후 비교 모두 시도
+            log.info("[verifyEmailAuth] 인증번호 일치 확인: {} == {}", inputCode, redisCode);
+            msg = "인증번호가 일치합니다.";
+            result = 1;
+            redisUtil.delete(key); // 인증 성공 시 인증번호 삭제
+            log.info("[verifyEmailAuth] 인증 성공으로 Redis 키 삭제: {}", key);
+        } else {
+            log.warn("[verifyEmailAuth] 인증번호 불일치: 입력값={}, 저장값={}", inputCode, redisCode);
+            msg = "인증번호가 일치하지 않습니다.";
+        }
+
+        return MsgDTO.builder().result(result).msg(msg).build();
     }
 }

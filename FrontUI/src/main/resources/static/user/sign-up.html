@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>회원가입</title>
+    <!-- iconify -->
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <style>
+        /* 배경 & 기본 글꼴 */
+        body{
+            background: radial-gradient(60rem 40rem at 10% -10%, #e9f6ff 0%, transparent 60%), #f6f8fb;
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", Segoe UI, Roboto, Arial, "Noto Sans KR", sans-serif;
+            color:#1f2937;
+            line-height:1.55;
+            margin:0;
+        }
+
+        /* 카드 컨테이너 */
+        .container.signup{
+            max-width:1300px;
+            margin:48px auto;
+            border-radius:18px;
+            box-shadow:0 24px 60px rgba(2,8,20,.08), 0 8px 24px rgba(2,8,20,.06);
+            background:#fff;
+            overflow:hidden;
+        }
+
+        /* 2열 레이아웃 */
+        .signup-grid{
+            display:grid;
+            grid-template-columns:1.05fr 1fr; /* 좌/우 */
+            min-height:620px;
+        }
+
+        /* 왼쪽 히어로 */
+        .signup-hero{
+            background:linear-gradient(45deg,#172E6C,#6FC8F8);
+            padding:56px 48px;
+            display:flex; flex-direction:column; justify-content:center;
+            color:#fff;
+        }
+        .signup-hero h3{ font-size:40px; font-weight:800; margin:0 0 14px; line-height:1.15; }
+        .signup-hero p{ max-width:420px; margin:0; font-size:15px; color:rgba(255,255,255,.9); }
+
+        /* 오른쪽 폼 영역 */
+        .signup-body{
+            padding: 40px 48px;
+            display:flex; justify-content:center; align-items:flex-start;
+        }
+
+        /* 🔒 공통 레일: 우측 끝선 정렬용 */
+        .rail{ width:100%; max-width:640px; margin:0 auto; }
+        .rail > *{ width:100%; }
+        .signup-body h2{ font-size:26px; font-weight:800; margin:0 0 20px; }
+
+        /* 역할 버튼 */
+        .role-btns{
+            display:grid; grid-template-columns:repeat(2,1fr);
+            gap:16px; margin-bottom:20px;
+        }
+        .role-btns button{
+            padding:14px 16px; border-radius:12px; border:1px solid #dfe7f1;
+            background:#f7f9fc; font-weight:700; color:#334155;
+            transition:all .18s ease; cursor:pointer;
+        }
+        .role-btns button.active{
+            background:#6FC8F8; border-color:#6FC8F8; color:#fff;
+            box-shadow:0 12px 20px rgba(111,200,248,.35);
+        }
+
+        /* 입력 필드 */
+        .form-group{ margin-bottom:16px; }
+        label{ display:block; margin-bottom:.35rem; font-weight:600; font-size:.92rem; color:#6b7280; }
+
+        /* 인풋 + 우측 버튼 한 줄 배치 */
+        .input-row{
+            display:grid;
+            grid-template-columns: 1fr auto; /* 인풋이 늘어나고 버튼은 내용폭 */
+            gap:12px;
+            width:100%;
+            align-items:center;
+        }
+
+        input[type="text"], input[type="password"], input[type="email"]{
+            width:100%; height:48px; font-size:1rem; padding:10px 14px;
+            border:1px solid #e5e7eb; border-radius:12px; background:#fff;
+            box-sizing:border-box;
+            transition:border-color .18s ease, box-shadow .18s ease;
+        }
+        input:focus{ border-color:#90cff8; box-shadow:0 0 0 .25rem rgba(111,200,248,.25); }
+
+        /* 오른쪽 작은 액션 버튼 */
+        .action-btn{
+            height:48px;
+            padding:0 14px;
+            border-radius:12px;
+            border:1px solid #dfe7f1;
+            background:#eef6ff;
+            color:#0f2f50;
+            font-weight:700;
+            cursor:pointer;
+            transition:all .18s ease;
+            white-space:nowrap;
+        }
+        .action-btn:hover{ background:#dff0ff; transform:translateY(-1px); }
+        .action-btn:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+
+        /* 감지 방식 섹션 */
+        .detect-label{ display:block; font-weight:600; color:#6b7280; margin:14px 0 8px; }
+        .detect-btns{
+            display:grid; grid-template-columns:repeat(3,1fr);
+            gap:12px; margin-bottom:20px; width:100%;
+        }
+        .detect-btn{
+            height:68px;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            gap:6px; padding:12px 10px;
+            border-radius:12px; border:1px solid #dfe7f1;
+            background:#f7f9fc; font-size:.9rem; color:#374151;
+            cursor:pointer; transition:all .18s ease;
+            box-sizing:border-box;
+        }
+        .detect-btn iconify-icon{ font-size:24px; line-height:1; }
+        .detect-btn:hover{ transform:translateY(-2px); }
+        .detect-btn.active{
+            background:#6FC8F8; border-color:#6FC8F8; color:#fff;
+            box-shadow:0 12px 20px rgba(111,200,248,.35);
+        }
+
+        /* 이메일 인증 행 */
+        #emailVerifyGroup{ display:none; }
+        .subtext{ margin-top:6px; font-size:.88rem; color:#6b7280; }
+        .ok{ color:#16a34a; }
+        .err{ color:#ef4444; }
+
+        /* 제출 버튼 */
+        .submit-btn{
+            width:100%; padding:14px 18px; border:0; border-radius:10px;
+            font-size:1rem; font-weight:700; background:#6FC8F8; color:#fff; cursor:pointer;
+            transition:background .2s ease, box-shadow .2s ease, transform .12s ease;
+        }
+        .submit-btn:hover{ background:#5bbcf0; transform:translateY(-1px); box-shadow:0 14px 20px rgba(111,200,248,.35); }
+        .msg{ margin-top:10px; color:#d32f2f; font-weight:600; }
+
+        /* 프로세싱 바 */
+        .progress-bar { display: flex; justify-content: space-between; margin-bottom: 24px; }
+        .progress-bar .step { flex: 1; text-align: center; padding: 8px 0; border-bottom: 3px solid #e0e7ef; color: #b0b8c1; font-weight: 700; font-size: 1.1rem; transition: all .2s; }
+        .progress-bar .step.active { border-bottom: 3px solid #6FC8F8; color: #1976d2; }
+
+        /* 단계별 섹션 */
+        .step-section { display: none; }
+        .step-section.active { display: block; }
+
+        /* 단계별 버튼 */
+        .step-btns { display: flex; justify-content: space-between; margin-top: 24px; gap: 24px; }
+        .next-btn, .prev-btn {
+            background: linear-gradient(90deg, #6FC8F8 0%, #1976d2 100%);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(111,200,248,.18);
+            transition: background .2s, box-shadow .2s, transform .12s;
+        }
+        .next-btn:hover, .prev-btn:hover {
+            background: linear-gradient(90deg, #1976d2 0%, #6FC8F8 100%);
+            box-shadow: 0 8px 20px rgba(111,200,248,.28);
+            transform: translateY(-2px);
+        }
+
+        /* 반응형 */
+        @media (max-width: 991.98px){
+            .signup-grid{ grid-template-columns:1fr; }
+            .signup-hero{ min-height:280px; }
+            .signup-body{ padding:28px 32px 36px; }
+            .rail{ max-width: 680px; }
+        }
+        @media (max-width: 575.98px){
+            .signup-hero h3{ font-size:32px; }
+            .signup-body{ padding:24px 20px 32px; }
+            .rail{ max-width: 100%; }
+            .detect-btns{ grid-template-columns:1fr; }
+            .role-btns{ grid-template-columns:1fr; }
+            .detect-btn{ height:60px; }
+        }
+        @media (min-width: 576px) and (max-width: 767.98px){
+            .detect-btns{ grid-template-columns:repeat(2,1fr); }
+        }
+
+        /* 개인정보 수집 및 이용 동의 스타일 */
+        .privacy-consent {
+            margin-top: 24px;
+            padding: 16px;
+            border: 1px solid #d1e7dd;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+        .privacy-consent h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .privacy-consent p {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+        .privacy-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+        .privacy-table-header {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+        .privacy-table-cell, .privacy-table-header {
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            text-align: left;
+        }
+        .privacy-table-row {
+            display: table-row;
+        }
+        .privacy-table-cell {
+            display: table-cell;
+        }
+        .privacy-table-header {
+            display: table-header-group;
+        }
+        .privacy-table-row:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .privacy-consent h3 {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-top: 16px;
+            margin-bottom: 8px;
+        }
+        .privacy-consent ul {
+            margin-left: 20px;
+            margin-bottom: 12px;
+        }
+        .privacy-consent li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="container signup">
+    <div class="signup-grid">
+        <!-- 좌측 -->
+        <aside class="signup-hero">
+            <img src="/images/logos/logo-white-clean.svg" alt="CueCode Logo" style="max-width:390px; margin-bottom:16px;">
+            <h3>Subtle Gestures, Deep Connections</h3>
+            <p>CueCode와 함께라면<br>당신의 표현이 언제나 닿을 수 있어요.</p>
+        </aside>
+        <!-- 우측 -->
+        <section class="signup-body">
+            <div class="rail">
+                <!-- 프로세싱 바 -->
+                <div class="progress-bar">
+                    <div class="step" id="step1-bar">1. 역할</div>
+                    <div class="step" id="step2-bar">2. 기본정보</div>
+                    <div class="step" id="step3-bar">3. 이메일</div>
+                    <div class="step" id="step4-bar">4. 감지방식</div>
+                </div>
+                <!-- 단계별 폼 -->
+                <form id="regForm">
+                    <!-- 1단계: 역할 선택 -->
+                    <section class="step-section" id="step1">
+                        <h2 style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>회원 유형을 선택하세요</span>
+                            <button type="button" class="next-btn"><iconify-icon icon="fa:arrow-right" width="28" height="28"></iconify-icon></button>
+                        </h2>
+                        <div class="role-btns">
+                            <button type="button" id="patientBtn" class="active">환자</button>
+                            <button type="button" id="managerBtn">보호자</button>
+                        </div>
+                    </section>
+                    <!-- 2단계: 기본정보 -->
+                    <section class="step-section" id="step2" style="display:none;">
+                        <h2>기본정보 입력</h2>
+                        <div class="form-group">
+                            <label for="user_id">아이디</label>
+                            <div class="input-row">
+                                <input type="text" id="user_id" name="user_id" placeholder="영문/숫자 4~20자" autocomplete="username" required />
+                                <button type="button" class="action-btn" id="checkIdBtn">중복확인</button>
+                            </div>
+                            <div class="subtext" id="idCheckMsg"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="user_name">이름</label>
+                            <input type="text" id="user_name" name="user_name" placeholder="이름" autocomplete="name" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="password">비밀번호</label>
+                            <input type="password" id="password" name="password" placeholder="영문·숫자·특수문자 조합 8~20자" autocomplete="new-password" required />
+                            <div class="subtext" id="pwValidMsg"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="password2">비밀번호 재입력</label>
+                            <input type="password" id="password2" name="password2" placeholder="비밀번호를 다시 입력하세요" autocomplete="new-password" required />
+                            <div class="subtext err" id="pwCheckMsg"></div>
+                        </div>
+                        <div class="step-btns">
+                            <button type="button" class="prev-btn"><iconify-icon icon="fa:arrow-left" width="28" height="28"></iconify-icon></button>
+                            <button type="button" class="next-btn"><iconify-icon icon="fa:arrow-right" width="28" height="28"></iconify-icon></button>
+                        </div>
+                    </section>
+                    <!-- 3단계: 이메일 인증 -->
+                    <section class="step-section" id="step3" style="display:none;">
+                        <h2>이메일 인증</h2>
+                        <div class="form-group">
+                            <label for="email">이메일</label>
+                            <div class="input-row">
+                                <input type="email" id="email" name="email" placeholder="example@cuecode.ai" autocomplete="email" required />
+                                <button type="button" class="action-btn" id="sendCodeBtn">인증번호 발송</button>
+                            </div>
+                        </div>
+                        <div class="form-group" id="emailVerifyGroup" style="display:none;">
+                            <label for="email_code">인증번호</label>
+                            <div class="input-row">
+                                <input type="text" id="email_code" placeholder="인증번호 6자리" inputmode="numeric" autocomplete="one-time-code" />
+                                <button type="button" class="action-btn" id="verifyCodeBtn">확인</button>
+                            </div>
+                            <div class="subtext">남은 시간 <span id="countdown">03:00</span></div>
+                            <div class="subtext" id="emailVerifyMsg"></div>
+                        </div>
+                        <div class="step-btns" id="step3-btns">
+                            <button type="button" class="prev-btn" id="manager-prev-btn"><iconify-icon icon="fa:arrow-left" width="28" height="28"></iconify-icon></button>
+                            <button type="button" class="next-btn"><iconify-icon icon="fa:arrow-right" width="28" height="28"></iconify-icon></button>
+                        </div>
+
+                        <!-- 보호자용 약관 동의 섹션 추가 -->
+                        <div class="terms-agreement" id="manager-terms" style="width: 100%; margin: 16px 0; display: none;">
+                            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                                <input type="checkbox" id="agreeAllManager" style="margin-right: 8px;">
+                                <label for="agreeAllManager" style="font-weight: bold; margin: 0;">전체 동의</label>
+                            </div>
+                            <div style="display: flex; align-items: center; margin-bottom: 8px; margin-left: 20px;">
+                                <input type="checkbox" id="agreeTermsManager" class="agreement-checkbox-manager" style="margin-right: 8px;">
+                                <label for="agreeTermsManager" style="margin: 0;">이용약관 동의 (필수)</label>
+                                <button type="button" style="margin-left: 8px; border: none; background: none; color: #1976d2; cursor: pointer; font-size: 0.8rem;" onclick="showTerms('terms')">보기</button>
+                            </div>
+                            <div style="display: flex; align-items: center; margin-bottom: 8px; margin-left: 20px;">
+                                <input type="checkbox" id="agreePrivacyManager" class="agreement-checkbox-manager" style="margin-right: 8px;">
+                                <label for="agreePrivacyManager" style="margin: 0;">개인정보 수집 및 이용 동의 (필수)</label>
+                                <button type="button" style="margin-left: 8px; border: none; background: none; color: #1976d2; cursor: pointer; font-size: 0.8rem;" onclick="showTerms('privacy')">보기</button>
+                            </div>
+                        </div>
+
+                        <!-- 회원가입 버튼 -->
+                        <div style="width: 100%; margin-top: 16px;">
+                            <button type="submit" class="submit-btn" id="manager-signup-btn" style="display:none;" onclick="submitForm()">
+                                회원가입
+                            </button>
+                        </div>
+                    </section>
+                    <!-- 4단계: 감지방식(환자만) -->
+                    <section class="step-section" id="step4" style="display:none;">
+                        <h2>어떤 방식으로 표현할까요?</h2>
+                        <div class="detect-btns" id="detectBtns">
+                            <div class="detect-btn active" data-value="hand"><iconify-icon icon="lucide:hand"></iconify-icon>손</div>
+                            <div class="detect-btn" data-value="face"><iconify-icon icon="lucide:scan-face"></iconify-icon>얼굴</div>
+                            <div class="detect-btn" data-value="both"><iconify-icon icon="lucide:scan-heart"></iconify-icon>손+얼굴</div>
+                        </div>
+                        <!-- 왼쪽 화살표 삭제하고 빈 div로 변경 -->
+                        <div class="step-btns">
+                            <!-- 왼쪽 화살표 버튼 삭제됨 -->
+                        </div>
+
+                        <!-- 약관 동의 섹션 추가 - 회원가입 버튼 위로 이동 -->
+                        <div class="terms-agreement" style="width: 100%; margin: 16px 0;">
+                            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                                <input type="checkbox" id="agreeAll" style="margin-right: 8px;">
+                                <label for="agreeAll" style="font-weight: bold; margin: 0;">전체 동의</label>
+                            </div>
+                            <div style="display: flex; align-items: center; margin-bottom: 8px; margin-left: 20px;">
+                                <input type="checkbox" id="agreeTerms" class="agreement-checkbox" style="margin-right: 8px;">
+                                <label for="agreeTerms" style="margin: 0;">이용약관 동의 (필수)</label>
+                                <button type="button" style="margin-left: 8px; border: none; background: none; color: #1976d2; cursor: pointer; font-size: 0.8rem;" onclick="showTerms('terms')">보기</button>
+                            </div>
+                            <div style="display: flex; align-items: center; margin-bottom: 8px; margin-left: 20px;">
+                                <input type="checkbox" id="agreePrivacy" class="agreement-checkbox" style="margin-right: 8px;">
+                                <label for="agreePrivacy" style="margin: 0;">개인정보 수집 및 이용 동의 (필수)</label>
+                                <button type="button" style="margin-left: 8px; border: none; background: none; color: #1976d2; cursor: pointer; font-size: 0.8rem;" onclick="showTerms('privacy')">보기</button>
+                            </div>
+                        </div>
+
+                        <!-- 회원가입 버튼을 별도 영역으로 분리 -->
+                        <div style="width: 100%; margin-top: 16px;">
+                            <button type="submit" class="submit-btn" onclick="submitForm()">회원가입</button>
+                        </div>
+                    </section>
+                </form>
+                <div class="msg" id="msg"></div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- 페이지 끝에 모달 추가 -->
+<div id="termsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="background-color: white; width: 80%; max-width: 600px; margin: 10% auto; padding: 20px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); max-height: 70%; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <h3 id="modalTitle" style="margin: 0;">약관</h3>
+            <button onclick="closeModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <div id="modalContent" style="margin-bottom: 20px;"></div>
+        <div style="text-align: right;">
+            <button onclick="closeModal()" style="background: #6FC8F8; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">확인</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 단계 관리
+    const steps = ["step1", "step2", "step3", "step4"];
+    let currentStep = 0;
+    let role = "patient";
+    let detectionAreaType = "hand";
+
+    function showStep(idx) {
+        steps.forEach((id, i) => {
+            document.getElementById(id).style.display = i === idx ? "block" : "none";
+            document.getElementById(id).classList.toggle("active", i === idx);
+            document.getElementById(`step${i+1}-bar`).classList.toggle("active", i === idx);
+        });
+        // 감지방식 단계(4)는 보호자면 숨김
+        document.getElementById("step4-bar").style.display = (role === "patient") ? "block" : "none";
+        document.getElementById("step4").style.display = (role === "patient" && currentStep === 3) ? "block" : "none";
+
+        // 보호자 회원가입 시 3단계에서 약관 동의와 회원가입 버튼 노출
+        const managerTerms = document.getElementById('manager-terms');
+        const managerSignupBtn = document.getElementById('manager-signup-btn');
+        const managerPrevBtn = document.getElementById('manager-prev-btn');
+
+        if (currentStep === 2 && role === 'manager') {
+            managerTerms.style.display = 'block';
+            managerSignupBtn.style.display = 'inline-block';
+            // 왼쪽 화살표(이전 버튼) 숨김
+            managerPrevBtn.style.display = 'none';
+        } else {
+            managerTerms.style.display = 'none';
+            managerSignupBtn.style.display = 'none';
+        }
+
+        // 보호자 이메일 인증 단계에서는 오른쪽 화살표(next-btn) 숨김
+        const step3NextBtn = document.querySelector('#step3-btns .next-btn');
+        if (currentStep === 2 && role === 'manager') {
+            if (step3NextBtn) step3NextBtn.style.display = 'none';
+        } else {
+            if (step3NextBtn) step3NextBtn.style.display = '';
+        }
+    }
+    function nextStep() {
+        if (currentStep === 0) { // 역할 선택
+            showStep(++currentStep);
+        } else if (currentStep === 1) { // 기본정보
+            if (!validateStep2()) return;
+            showStep(++currentStep);
+        } else if (currentStep === 2) { // 이메일
+            if (!validateStep3()) return;
+            if (role === "manager") { submitForm(); return; }
+            showStep(++currentStep);
+        } else if (currentStep === 3) { // 감지방식
+            submitForm();
+        }
+    }
+    function prevStep() {
+        if (currentStep > 0) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    }
+    // 역할 버튼
+    const patientBtn = document.getElementById('patientBtn');
+    const managerBtn = document.getElementById('managerBtn');
+    patientBtn.onclick = function () { role = 'patient'; this.classList.add('active'); managerBtn.classList.remove('active'); };
+    managerBtn.onclick = function () { role = 'manager'; this.classList.add('active'); patientBtn.classList.remove('active'); };
+    // 감지방식 버튼
+    Array.from(document.querySelectorAll('.detect-btn')).forEach(btn => {
+        btn.onclick = function () {
+            Array.from(document.querySelectorAll('.detect-btn')).forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            detectionAreaType = this.dataset.value;
+        };
+    });
+    // 다음/이전 버튼 이벤트
+    Array.from(document.querySelectorAll('.next-btn')).forEach(btn => btn.onclick = nextStep);
+    Array.from(document.querySelectorAll('.prev-btn')).forEach(btn => btn.onclick = prevStep);
+    // 비밀번호 확인
+    const pwInput = document.getElementById('password');
+    const pw2Input = document.getElementById('password2');
+    const pwValidMsg = document.getElementById('pwValidMsg');
+    const pwCheckMsg = document.getElementById('pwCheckMsg');
+    // 비밀번호 유효성 검사 함수
+    function validatePassword(pw) {
+        const lengthValid = pw.length >= 8 && pw.length <= 20;
+        const engValid = /[a-zA-Z]/.test(pw);
+        const numValid = /[0-9]/.test(pw);
+        const specialValid = /[!@#$%^&*(),.?":{}|<>\[\]\\/~`_+=;'\-]/.test(pw);
+        return {
+            lengthValid,
+            engValid,
+            numValid,
+            specialValid,
+            all: lengthValid && engValid && numValid && specialValid
+        };
+    }
+    // 비밀번호 입력 시 실시간 유효성 안내
+    pwInput.addEventListener('input', function() {
+        const pw = pwInput.value;
+        const v = validatePassword(pw);
+        if (!pw) {
+            pwValidMsg.textContent = '';
+            pwValidMsg.className = 'subtext';
+            return;
+        }
+        if (v.all) {
+            pwValidMsg.textContent = '사용 가능한 비밀번호입니다.';
+            pwValidMsg.className = 'subtext ok';
+        } else {
+            let msg = '비밀번호는 8~20자, 영문, 숫자, 특수문자를 모두 포함해야 합니다.';
+            pwValidMsg.textContent = msg;
+            pwValidMsg.className = 'subtext err';
+        }
+    });
+    // 비밀번호 확인 입력 시에도 유효성 체크
+    pw2Input.addEventListener('input', function() {
+        checkPwMatch();
+    });
+    // 비밀번호 일치 및 유효성 통합 체크
+    function checkPwMatch() {
+        const pw = pwInput.value;
+        const pw2 = pw2Input.value;
+        const v = validatePassword(pw);
+        if (!pw2) { pwCheckMsg.textContent = ''; return true; }
+        if (!v.all) {
+            pwCheckMsg.textContent = '비밀번호 조건을 먼저 만족시켜주세요.';
+            pwCheckMsg.className = 'subtext err';
+            return false;
+        }
+        if (pw !== pw2) {
+            pwCheckMsg.textContent = '비밀번호가 일치하지 않습니다.';
+            pwCheckMsg.className = 'subtext err';
+            return false;
+        } else {
+            pwCheckMsg.textContent = '비밀번호가 일치합니다.';
+            pwCheckMsg.className = 'subtext ok';
+            return true;
+        }
+    }
+    function validateStep2() {
+        if (!document.getElementById('user_id').value.trim()) { alert('아이디를 입력하세요.'); return false; }
+        if (!document.getElementById('user_name').value.trim()) { alert('이름을 입력하세요.'); return false; }
+        if (!pwInput.value) { alert('비밀번호를 입력하세요.'); return false; }
+        if (!pw2Input.value) { alert('비밀번호를 재입력하세요.'); return false; }
+        if (!checkPwMatch()) { pw2Input.focus(); return false; }
+        return true;
+    }
+    // 이메일 인증(간략화)
+    const emailInput = document.getElementById('email');
+    const sendCodeBtn = document.getElementById('sendCodeBtn');
+    const emailVerifyGroup = document.getElementById('emailVerifyGroup');
+    const emailCodeInput = document.getElementById('email_code');
+    const verifyCodeBtn = document.getElementById('verifyCodeBtn');
+    const emailVerifyMsg = document.getElementById('emailVerifyMsg');
+    let sentCode = null, emailVerified = false, countdownTimer = null, remaining = 0;
+    function formatTime(sec){ const m = Math.floor(sec/60).toString().padStart(2,'0'); const s = (sec%60).toString().padStart(2,'0'); return `${m}:${s}`; }
+    function startCountdown(seconds){ remaining = seconds; document.getElementById('countdown').textContent = formatTime(remaining); clearInterval(countdownTimer); countdownTimer = setInterval(()=>{ remaining--; document.getElementById('countdown').textContent = formatTime(Math.max(remaining,0)); if(remaining<=0){ clearInterval(countdownTimer); emailVerifyMsg.textContent = '인증 시간이 만료되었습니다.'; verifyCodeBtn.disabled = true; sendCodeBtn.disabled = false; sendCodeBtn.textContent = '인증번호 재발송'; } },1000); }
+    sendCodeBtn.onclick = function() {
+        const email = emailInput.value.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            alert('올바른 이메일 주소를 입력하세요.');
+            return;
+        }
+        // 서버로 이메일만 전송, 인증번호 및 HTML 메일 발송은 백엔드에서 처리
+        fetch('http://localhost:13000/reg/sendMail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.result === 1) {
+                emailVerifyGroup.style.display = 'block';
+                startCountdown(180);
+                emailCodeInput.value = '';
+                emailCodeInput.focus();
+                sendCodeBtn.textContent = '발송 완료';
+                alert('인증메일이 발송되었습니다. 메일을 확인하세요.');
+            } else {
+                alert('메일 발송 실패: ' + data.msg);
+            }
+        })
+        .catch(() => {
+            alert('메일 발송 요청 실패');
+        });
+    };
+
+    // 중복된 이메일 인증 함수 제거하고 하나로 통합
+    verifyCodeBtn.onclick = function() {
+        const email = emailInput.value.trim();
+        const authCode = emailCodeInput.value.trim();
+        // 서버 인증 요청
+        fetch('http://localhost:13000/reg/verifyEmailAuth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, authCode: authCode })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.result === 1) {
+                    clearInterval(countdownTimer);
+                    emailVerified = true;
+                    emailVerifyMsg.textContent = '이메일 인증이 완료되었습니다.';
+                    verifyCodeBtn.disabled = true;
+                    sendCodeBtn.disabled = true;
+                    sendCodeBtn.textContent = '인증 완료';
+                } else {
+                    emailVerified = false;
+                    emailVerifyMsg.textContent = data.msg || '인증번호가 일치하지 않습니다.';
+                }
+            })
+            .catch((err) => {
+                console.error('이메일 인증 요청 오류:', err);
+                emailVerified = false;
+                emailVerifyMsg.textContent = '서버 인증 요청 실패. 다시 시도해주세요.';
+            });
+    };
+    function validateStep3() {
+        if (!emailInput.value.trim()) { alert('이메일을 입력하세요.'); return false; }
+        if (!emailVerified) { alert('이메일 인증을 완료하세요.'); return false; }
+        return true;
+    }
+    // 폼 제출
+    function submitForm() {
+        const user_id = document.getElementById('user_id').value;
+        const user_name = document.getElementById('user_name').value;
+        const password = document.getElementById('password').value;
+        const email = document.getElementById('email').value;
+        let url = '';
+        if (role === 'patient') {
+            url = `http://localhost:13000/reg/insertPatient?user_id=${encodeURIComponent(user_id)}&user_name=${encodeURIComponent(user_name)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&detectionAreaType=${encodeURIComponent(detectionAreaType)}`;
+        } else {
+            url = `http://localhost:13000/reg/insertManager?user_id=${encodeURIComponent(user_id)}&user_name=${encodeURIComponent(user_name)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}`;
+        }
+        fetch(url, { method: 'POST' })
+            .then(res => res.text())
+            .then(text => { document.getElementById('msg').textContent = text.includes('1') ? '회원가입 성공!' : text; })
+            .catch(() => { document.getElementById('msg').textContent = '회원가입 요청 실패'; });
+    }
+    // 아이디 중복 확인
+    const userIdInput = document.getElementById('user_id');
+    const checkIdBtn = document.getElementById('checkIdBtn');
+    const idCheckMsg = document.getElementById('idCheckMsg');
+    let idCheckTimeout = null;
+    checkIdBtn.onclick = function() {
+        const userId = userIdInput.value.trim();
+        if (!userId) { alert('아이디를 입력하세요.'); userIdInput.focus(); return; }
+        // 중복 확인 요청
+        fetch(`http://localhost:13000/reg/checkUserId?user_id=${encodeURIComponent(userId)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.available) {
+                    idCheckMsg.textContent = '사용 가능한 아이디입니다.'; idCheckMsg.className = 'subtext ok';
+                    userIdInput.classList.add('valid');
+                } else {
+                    idCheckMsg.textContent = '이미 사용 중인 아이디입니다.'; idCheckMsg.className = 'subtext err';
+                    userIdInput.classList.remove('valid');
+                }
+            })
+            .catch(() => { idCheckMsg.textContent = '아이디 중복 확인 실패'; idCheckMsg.className = 'subtext err'; });
+    };
+
+    // 폼 submit 막기
+    regForm.onsubmit = e => { e.preventDefault(); };
+    // 엔터 키 입력 시 단계별 제어
+    regForm.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            // 현재 단계가 마지막 단계(회원가입) 전이면 submit 막고 다음 단계로만 이동
+            if (currentStep < steps.length - 1) {
+                e.preventDefault();
+                nextStep();
+            }
+            // 회원가입 단계에서는 엔터로 submit 허용
+        }
+    });
+    // 첫 화면 표시
+    showStep(currentStep);
+
+    // 약관 동의 관련 코드
+    const agreeAllCheckbox = document.getElementById('agreeAll');
+    const agreementCheckboxes = document.querySelectorAll('.agreement-checkbox');
+
+    // 보호자용 약관 동의 관련 코드 추가
+    const agreeAllManagerCheckbox = document.getElementById('agreeAllManager');
+    const agreementManagerCheckboxes = document.querySelectorAll('.agreement-checkbox-manager');
+
+    // 전체 동의 체크박스 이벤트 (환자용)
+    agreeAllCheckbox.addEventListener('change', function() {
+        agreementCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+
+    // 개별 체크박스 변경 시 전체 동의 상태 업데이트 (환자용)
+    agreementCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            agreeAllCheckbox.checked = Array.from(agreementCheckboxes).every(cb => cb.checked);
+        });
+    });
+
+    // 전체 동의 체크박스 이벤트 (보호자용)
+    agreeAllManagerCheckbox.addEventListener('change', function() {
+        agreementManagerCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+
+    // 개별 체크박스 변경 시 전체 동의 상태 업데이트 (보호자용)
+    agreementManagerCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            agreeAllManagerCheckbox.checked = Array.from(agreementManagerCheckboxes).every(cb => cb.checked);
+        });
+    });
+
+    // 회원가입 버튼 클릭 시 약관 동의 검증 추가
+    const originalSubmitForm = submitForm;
+    submitForm = function() {
+        // 환자 회원가입 약관 동의 확인
+        if (role === 'patient' && currentStep === 3) {
+            const termsAgreed = document.getElementById('agreeTerms').checked;
+            const privacyAgreed = document.getElementById('agreePrivacy').checked;
+
+            if (!termsAgreed || !privacyAgreed) {
+                alert('필수 약관에 동의해주세요.');
+                return;
+            }
+        }
+
+        // 보호자 회원가입 약관 동의 확인
+        if (role === 'manager' && currentStep === 2) {
+            const termsAgreed = document.getElementById('agreeTermsManager').checked;
+            const privacyAgreed = document.getElementById('agreePrivacyManager').checked;
+
+            if (!termsAgreed || !privacyAgreed) {
+                alert('필수 약관에 동의해주세요.');
+                return;
+            }
+        }
+
+        // 기존 submitForm 함수 실행
+        originalSubmitForm();
+    };
+</script>
+</body>
+</html>

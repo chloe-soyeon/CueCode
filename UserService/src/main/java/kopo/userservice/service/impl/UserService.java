@@ -2,6 +2,7 @@ package kopo.userservice.service.impl;
 
 import kopo.userservice.dto.PatientDTO;
 import kopo.userservice.dto.ManagerDTO;
+import kopo.userservice.dto.MailDTO;
 import kopo.userservice.repository.PatientRepository;
 import kopo.userservice.repository.ManagerRepository;
 import kopo.userservice.repository.DetectionAreaRepository;
@@ -9,13 +10,16 @@ import kopo.userservice.model.PatientDocument;
 import kopo.userservice.model.ManagerDocument;
 import kopo.userservice.repository.document.DetectionAreaDocument;
 import kopo.userservice.service.IUserService;
+import kopo.userservice.service.IMailService;
 import kopo.userservice.util.CmmUtil;
+import kopo.userservice.util.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -25,6 +29,8 @@ public class UserService implements IUserService {
     private final ManagerRepository managerRepository;
     private final PasswordEncoder passwordEncoder;
     private final DetectionAreaRepository detectionAreaRepository;
+    private final IMailService mailService;
+    private final RedisUtil redisUtil;
 
     @Override
     public Object login(String userId, String password) {
@@ -183,5 +189,59 @@ public class UserService implements IUserService {
         log.info("getManager 조회 실패: 아이디 {} 없음", dto.id());
         return null;
     }
-}
 
+    @Override
+    public boolean existsUserId(String userId) {
+        if (userId == null || userId.isBlank()) return false;
+        boolean existsPatient = patientRepository.findById(userId).isPresent();
+        boolean existsManager = managerRepository.findById(userId).isPresent();
+        return existsPatient || existsManager;
+    }
+
+    /**
+     * 인증번호 포함 HTML 이메일 발송 (이메일 인증)
+     * @param email 수신자 이메일
+     * @return 발송된 인증번호
+     */
+    public int sendEmailAuthCode(String email) {
+        log.info("sendEmailAuthCode Start!");
+        if (email == null || email.trim().isEmpty()) {
+            log.warn("[sendEmailAuthCode] 이메일 파라미터가 비어 있습니다.");
+            throw new IllegalArgumentException("이메일 주소가 입력되지 않았습니다.");
+        }
+
+        // 원본 이메일 로깅
+        log.info("[sendEmailAuthCode] 원본 이메일: {}", email);
+
+        // 이메일 정규화 및 로깅
+        String normalizedEmail = email.trim().toLowerCase();
+        log.info("[sendEmailAuthCode] 정규화된 이메일: {}", normalizedEmail);
+
+        int authCode = ThreadLocalRandom.current().nextInt(100000, 1000000);
+        String key = "emailAuth:" + normalizedEmail;
+
+        // Redis 저장 전 로깅
+        log.info("[sendEmailAuthCode] Redis 저장 시도 key: {}, value: {}", key, authCode);
+
+        // Redis 저장 후 실제 저장 여부 확인
+        redisUtil.set(key, String.valueOf(authCode), 180); // 3분 유효
+        String savedValue = redisUtil.get(key);
+        log.info("[sendEmailAuthCode] Redis 저장 확인 key: {}, 저장된 value: {}", key, savedValue);
+
+        // 이메일 발송 로직 (이전과 동일하게 MailService 사용)
+        MailDTO dto = new MailDTO();
+        dto.setTitle("CueCode 이메일 인증번호");
+        String contents = "<div style='max-width:600px; margin:0 auto; padding:40px 30px; font-family:Arial, sans-serif; border:1px solid #e0e0e0; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1);'>";
+        contents += "    <div style='text-align:center;'>";
+        contents += "        <h2 style='color:#1976d2; margin-bottom:10px;'>CueCode 이메일 인증</h2>";
+        contents += "        <p style='font-size:16px; color:#333; margin-bottom:30px;'>아래 인증번호를 입력하여 이메일 인증을 완료해주세요.</p>";
+        contents += "        <div style='font-size:28px; font-weight:bold; margin:20px 0; color:#1976d2; letter-spacing:4px;'>" + authCode + "</div>";
+        contents += "        <p style='font-size:12px; color:#aaa; margin-top:40px;'>본 메일은 발신전용입니다. 문의사항은 홈페이지를 통해 접수해주세요.<br>© CueCode Team</p>";
+        contents += "    </div></div>";
+        dto.setContents(contents);
+        dto.setToMail(email);
+        mailService.doSendMail(dto);
+        log.info("sendEmailAuthCode End!");
+        return authCode;
+    }
+}

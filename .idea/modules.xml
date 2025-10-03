@@ -2,8 +2,13 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ApiGateway.main.iml" filepath="$PROJECT_DIR$/.idea/modules/ApiGateway.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/CueCode.iml" filepath="$PROJECT_DIR$/CueCode.iml" />
+<<<<<<< Updated upstream
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/MotionService.main.iml" filepath="$PROJECT_DIR$/.idea/modules/MotionService.main.iml" />
+=======
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/SpringConfigServer.main.iml" filepath="$PROJECT_DIR$/.idea/modules/SpringConfigServer.main.iml" />
+>>>>>>> Stashed changes
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/UserService.main.iml" filepath="$PROJECT_DIR$/.idea/modules/UserService.main.iml" />
     </modules>
   </component>
