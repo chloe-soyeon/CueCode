@@ -61,7 +61,8 @@ public class SecurityConfig {
                                 , "/patient/**"
                                 , "/manager/**"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/reg/**").permitAll() // ✅ 이 줄을 추가
+                        .requestMatchers(HttpMethod.GET, "/reg/**").permitAll() // 아이디 중복확인 등 GET도 허용
+                        .requestMatchers(HttpMethod.POST, "/reg/**").permitAll() // 기존 코드 유지
                         .anyRequest().authenticated()
                 )
                 // ✅ 커스텀 필터 없이 JWT 검증
