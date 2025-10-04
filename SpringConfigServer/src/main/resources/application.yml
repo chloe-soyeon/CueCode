@@ -10,4 +10,3 @@ spring:
           uri: https://github.com/chloe-soyeon/CueCode-Config
           default-label: master
           search-paths: msa
-
