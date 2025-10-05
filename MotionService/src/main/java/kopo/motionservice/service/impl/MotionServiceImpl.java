@@ -67,4 +67,36 @@ public class MotionServiceImpl implements IMotionService {
 
         log.info("[MotionService] Motion saved successfully! recordId: {}", document.getRecordId());
     }
+
+    @Override
+    public String sendMotionVideoToFastAPI(String phrase, String detectionArea, org.springframework.web.multipart.MultipartFile videoFile) {
+        log.info("[MotionService] Sending video to FastAPI for phrase: {}, detectionArea: {}", phrase, detectionArea);
+        try {
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            String fastApiUrl = "http://localhost:8000/api/process-motion"; // Update to your FastAPI endpoint
+
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.MULTIPART_FORM_DATA);
+
+            org.springframework.util.MultiValueMap<String, Object> body = new org.springframework.util.LinkedMultiValueMap<>();
+            body.add("phrase", phrase);
+            body.add("detectionArea", detectionArea);
+            body.add("videoFile", new org.springframework.core.io.ByteArrayResource(videoFile.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return videoFile.getOriginalFilename();
+                }
+            });
+
+            org.springframework.http.HttpEntity<org.springframework.util.MultiValueMap<String, Object>> requestEntity =
+                    new org.springframework.http.HttpEntity<>(body, headers);
+
+            org.springframework.http.ResponseEntity<String> response = restTemplate.postForEntity(fastApiUrl, requestEntity, String.class);
+            log.info("[MotionService] FastAPI response: {}", response.getBody());
+            return response.getBody();
+        } catch (Exception e) {
+            log.error("[MotionService] Error sending video to FastAPI", e);
+            return "Error: " + e.getMessage();
+        }
+    }
 }
