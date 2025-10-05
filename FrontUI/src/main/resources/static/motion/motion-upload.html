@@ -85,56 +85,25 @@
     </div>
 </div>
 
-<!-- FFmpeg.wasm UMD bundle loaded via API Gateway -->
-<script src="/vendor/ffmpeg/ffmpeg.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('DOMContentLoaded', () => {
         const statusDiv = document.getElementById('status');
-
-        // ---- Elements
         const preview = document.getElementById('preview');
         const startBtn = document.getElementById('startBtn');
         const stopBtn  = document.getElementById('stopBtn');
         const resetBtn = document.getElementById('resetBtn');
         const uploadBtn = document.getElementById('uploadButton');
         const form = document.getElementById('uploadForm');
-
         const trimControls = document.getElementById('trimControls');
         const trimStart = document.getElementById('trimStart');
         const trimEnd = document.getElementById('trimEnd');
-        const trimFinishBtn = document.getElementById('trimFinishBtn');
 
         // ---- Config
         const API_GATEWAY_URL = "http://localhost:13000"; // 필요 시 변경
 
         // ---- State
-        let ffmpeg, ffmpegReady = false;
         let mediaRecorder, recordedBlobs = [], stream, videoURL, videoDuration = 0;
-        let trimmedBlob = null, trimmedVideoURL = null;
-        let trimPreviewActive = false;
 
-        // ---- FFmpeg Load
-        try {
-            statusDiv.textContent = "FFmpeg.wasm 로딩 중... (최초 10~30초 소요)";
-            // Use FFmpeg class from FFmpegWASM UMD bundle
-            if (!window.FFmpegWASM || !window.FFmpegWASM.FFmpeg) {
-                throw new Error("FFmpeg UMD 번들을 찾을 수 없습니다. 네트워크/차단 여부 확인");
-            }
-            ffmpeg = new window.FFmpegWASM.FFmpeg({
-                log: true,
-                corePath: "/vendor/ffmpeg/core/ffmpeg-core.js"
-            });
-            await ffmpeg.load();
-            ffmpegReady = true;
-            statusDiv.textContent = "FFmpeg.wasm 로드 완료. 녹화/트리밍 가능.";
-            trimFinishBtn.disabled = false;
-        } catch (e) {
-            console.error(e);
-            statusDiv.textContent = "FFmpeg.wasm 로드 실패: " + (e?.message || e);
-            trimFinishBtn.disabled = true;
-        }
-
-        // ---- Helpers
         function enable(el, v = true) { el.disabled = !v; }
         function revokeURLSafe(url) { if (url) URL.revokeObjectURL(url); }
 
@@ -142,18 +111,14 @@
         startBtn.onclick = async () => {
             try {
                 recordedBlobs = [];
-                trimmedBlob = null;
-                revokeURLSafe(trimmedVideoURL); trimmedVideoURL = null;
                 revokeURLSafe(videoURL); videoURL = null;
 
-                // getUserMedia
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
                     audio: true
                 });
                 preview.srcObject = stream;
 
-                // Some browsers prefer a mimeType; fallback silently if unsupported
                 const options = { mimeType: 'video/webm; codecs=vp9,opus' };
                 try {
                     mediaRecorder = new MediaRecorder(stream, options);
@@ -176,7 +141,6 @@
                     preview.onloadedmetadata = () => {
                         videoDuration = preview.duration || 0;
                         if (!videoDuration || !isFinite(videoDuration)) {
-                            // 일부 브라우저에서 메타데이터가 늦게 들어오는 경우 재시도
                             setTimeout(() => {
                                 videoDuration = preview.duration || 0;
                                 trimEnd.value = (videoDuration || 0).toFixed(1);
@@ -191,7 +155,7 @@
                     enable(resetBtn, true);
                 };
 
-                mediaRecorder.start(); // start recording
+                mediaRecorder.start();
                 enable(startBtn, false);
                 enable(stopBtn, true);
                 enable(uploadBtn, false);
@@ -218,19 +182,15 @@
 
         resetBtn.onclick = () => {
             try {
-                // Reset state
                 recordedBlobs = [];
-                trimmedBlob = null;
                 videoDuration = 0;
                 trimStart.value = "0";
                 trimEnd.value = "0";
                 trimControls.style.display = 'none';
 
-                // Reset preview
                 preview.pause();
                 preview.removeAttribute('src');
                 preview.srcObject = null;
-                revokeURLSafe(trimmedVideoURL); trimmedVideoURL = null;
                 revokeURLSafe(videoURL); videoURL = null;
 
                 enable(uploadBtn, true);
@@ -244,111 +204,21 @@
             }
         };
 
-        // ---- Trimming (FFmpeg)
-        async function getTrimmedBlob() {
-            const start = Math.max(0, parseFloat(trimStart.value) || 0);
-            const end = Math.max(0, parseFloat(trimEnd.value) || videoDuration || 0);
-
-            if (!videoURL || start >= end) return null;
-
-            const originalBlob = new Blob(recordedBlobs, { type: 'video/webm' });
-            if (!ffmpegReady) {
-                // FFmpeg 미사용: 범위 전체면 원본 반환, 아니면 단순 미지원
-                if (start <= 0 && end >= (videoDuration || 0)) return originalBlob;
-                throw new Error("FFmpeg이 로드되지 않아 트리밍을 사용할 수 없습니다.");
-            }
-
-            // 전체 범위면 복사 반환
-            if (start <= 0 && end >= (videoDuration || 0)) return originalBlob;
-
-            // Write to FS
-            const arrayBuffer = await originalBlob.arrayBuffer();
-            ffmpeg.FS('writeFile', 'input.webm', new Uint8Array(arrayBuffer));
-
-            // Faster seek generally places -ss before -i, but for -c copy + webm keyframes
-            // we use input then ss/to to preserve containers. Adjust if needed.
-            await ffmpeg.run(
-                '-i', 'input.webm',
-                '-ss', start.toString(),
-                '-to', end.toString(),
-                '-c', 'copy',
-                'output.webm'
-            );
-
-            const trimmedData = ffmpeg.FS('readFile', 'output.webm');
-
-            // Cleanup
-            try { ffmpeg.FS('unlink', 'input.webm'); } catch {}
-            try { ffmpeg.FS('unlink', 'output.webm'); } catch {}
-
-            return new Blob([trimmedData.buffer], { type: 'video/webm' });
-        }
-
-        function playTrimmedPreview() {
-            if (!videoURL) return;
-            trimPreviewActive = true;
-            preview.src = videoURL;
-            const start = Math.max(0, parseFloat(trimStart.value) || 0);
-            preview.currentTime = start;
-        }
-
-        trimStart.oninput = playTrimmedPreview;
-        trimEnd.oninput = playTrimmedPreview;
-
-        preview.addEventListener('seeked', () => {
-            if (trimPreviewActive) {
-                preview.play().catch(()=>{});
-                trimPreviewActive = false;
-            }
-        });
-
-        preview.addEventListener('timeupdate', () => {
-            const end = Math.max(0, parseFloat(trimEnd.value) || videoDuration || 0);
-            if (!preview.paused && end && preview.currentTime >= end) {
-                preview.pause();
-            }
-        });
-
-        trimFinishBtn.onclick = async () => {
-            try {
-                statusDiv.textContent = "트리밍 중...";
-                enable(trimFinishBtn, false);
-
-                const blob = await getTrimmedBlob();
-                if (!blob) {
-                    statusDiv.textContent = "트리밍 실패: 시작/종료 시간을 확인하세요.";
-                    enable(trimFinishBtn, true);
-                    return;
-                }
-
-                trimmedBlob = blob;
-                revokeURLSafe(trimmedVideoURL);
-                trimmedVideoURL = URL.createObjectURL(trimmedBlob);
-                preview.src = trimmedVideoURL;
-                preview.currentTime = 0;
-                preview.play().catch(()=>{});
-                statusDiv.textContent = "트리밍 완료. 업로드 가능.";
-            } catch (e) {
-                console.error(e);
-                statusDiv.textContent = "트리밍 오류: " + (e?.message || e);
-            } finally {
-                enable(trimFinishBtn, true);
-            }
-        };
-
         // ---- Upload
         form.onsubmit = async (e) => {
             e.preventDefault();
 
             const label = document.getElementById('motionLabel').value?.trim();
             const detectionArea = document.getElementById('detectionArea').value;
+            const trimStartVal = trimStart.value;
+            const trimEndVal = trimEnd.value;
 
             if (!label) {
                 statusDiv.textContent = "동작 이름을 입력해주세요.";
                 return;
             }
-            if (!(trimmedBlob || videoURL) || (!recordedBlobs?.length && !trimmedBlob)) {
-                statusDiv.textContent = "녹화/트리밍 영상을 준비해주세요.";
+            if (!videoURL || !recordedBlobs?.length) {
+                statusDiv.textContent = "녹화 영상을 준비해주세요.";
                 return;
             }
 
@@ -356,11 +226,13 @@
                 statusDiv.textContent = "업로드 중...";
                 enable(uploadBtn, false);
 
-                const uploadBlob = trimmedBlob || new Blob(recordedBlobs, { type: 'video/webm' });
+                const uploadBlob = new Blob(recordedBlobs, { type: 'video/webm' });
                 const formData = new FormData();
                 formData.append('motionLabel', label);
                 formData.append('detectionArea', detectionArea);
                 formData.append('videoFile', uploadBlob, 'motion.webm');
+                formData.append('trimStart', trimStartVal);
+                formData.append('trimEnd', trimEndVal);
 
                 const response = await fetch(`${API_GATEWAY_URL}/motions/upload`, {
                     method: 'POST',

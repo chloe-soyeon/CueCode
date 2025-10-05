@@ -16,8 +16,10 @@ public class MotionController {
     public ResponseEntity<String> uploadMotionVideo(
             @RequestParam("motionLabel") String motionLabel,
             @RequestParam("detectionArea") String detectionArea,
-            @RequestParam("videoFile") MultipartFile videoFile) {
-        String result = motionService.sendMotionVideoToFastAPI(motionLabel, detectionArea, videoFile);
+            @RequestParam("videoFile") MultipartFile videoFile,
+            @RequestParam("trimStart") String trimStart,
+            @RequestParam("trimEnd") String trimEnd) {
+        String result = motionService.sendMotionVideoToFastAPI(motionLabel, detectionArea, videoFile, trimStart, trimEnd);
         return ResponseEntity.ok(result);
     }
 }

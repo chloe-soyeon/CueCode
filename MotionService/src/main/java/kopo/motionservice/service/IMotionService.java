@@ -19,4 +19,15 @@ public interface IMotionService {
      */
     String sendMotionVideoToFastAPI(String phrase, String detectionArea, org.springframework.web.multipart.MultipartFile videoFile);
 
+    /**
+     * 프레이즈, 검출영역, 영상 파일, 트리밍 구간을 FastAPI로 전송하는 메서드
+     * @param phrase 사용자 입력 프레이즈
+     * @param detectionArea 검출 영역
+     * @param videoFile 사용자 업로드 영상 파일
+     * @param trimStart 영상 시작 트리밍 구간 (초)
+     * @param trimEnd 영상 종료 트리밍 구간 (초)
+     * @return FastAPI 응답 결과
+     */
+    String sendMotionVideoToFastAPI(String phrase, String detectionArea, org.springframework.web.multipart.MultipartFile videoFile, String trimStart, String trimEnd);
+
 }
