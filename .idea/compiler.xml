@@ -6,11 +6,30 @@
       <profile name="Gradle Imported" enabled="true">
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
-          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.40/398c6d2d7c42c96b65e78d2ddc9be0058c163453/lombok-1.18.40.jar" />
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.32/17d46b3e205515e1e8efd3ee4d57ce8018914163/lombok-1.18.32.jar" />
         </processorPath>
-        <module name="MotionService.main" />
+        <module name="SpringConfigServer.main" />
       </profile>
     </annotationProcessing>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="ApiGateway" options="-parameters" />
+      <module name="ApiGateway.main" options="-parameters" />
+      <module name="ApiGateway.test" options="-parameters" />
+      <module name="FrontUI" options="-parameters" />
+      <module name="FrontUI.main" options="-parameters" />
+      <module name="FrontUI.test" options="-parameters" />
+      <module name="MotionService" options="-parameters" />
+      <module name="MotionService.main" options="-parameters" />
+      <module name="MotionService.test" options="-parameters" />
+      <module name="SpringConfigServer" options="-parameters" />
+      <module name="SpringConfigServer.main" options="-parameters" />
+      <module name="SpringConfigServer.test" options="-parameters" />
+      <module name="UserService" options="-parameters" />
+      <module name="UserService.main" options="-parameters" />
+      <module name="UserService.test" options="-parameters" />
+    </option>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
