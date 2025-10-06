@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="data:," />
+    <title>MotionLink Demo v0.5 - Motion Upload</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root { color-scheme: light; }
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; margin: 0; background-color: #f0f0f0; padding: 24px;
+        }
+        h1 { margin: 0 0 16px; }
+        #container {
+            position: relative; width: min(720px, 100%); min-height: 200px;
+            border: 2px solid #333; border-radius: 12px; background: #fff;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .status-container { margin-top: 10px; text-align: center; }
+        .controls-container { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        #status { font-size: 1.05em; font-weight: 600; color: #333; min-height: 1.2em; }
+        button {
+            padding: 10px 16px; font-size: 1em; color: white; border: none;
+            border-radius: 10px; cursor: pointer; transition: transform .04s ease, opacity .2s, background-color .2s;
+            background-color: #4F46E5; box-shadow: 0 2px 8px rgba(79,70,229,.25);
+        }
+        button:active { transform: translateY(1px); }
+        button.alt { background-color: #0ea5e9; }
+        button.warn { background-color: #ef4444; }
+        button:disabled { background-color: #9aa0a6; cursor: not-allowed; opacity: .75; }
+        input[type="text"], select, input[type="number"] {
+            padding: 10px; border-radius: 10px; border: 1px solid #d0d0d0; font-size: 1em;
+            background: #fff; outline: none;
+        }
+        input[type="text"]:focus, select:focus, input[type="number"]:focus { border-color: #4F46E5; }
+        video { background: #111; border-radius: 10px; }
+        .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .hint { font-size: .9em; color: #666; margin-top: 6px; }
+    </style>
+</head>
+<body>
+<h1>MotionLink 동작 영상 업로드 (v0.5)</h1>
+
+<div id="container">
+    <form id="uploadForm" enctype="multipart/form-data">
+        <div class="controls-container">
+            <select id="detectionArea" name="detectionArea" required>
+                <option value="hands">손</option>
+                <option value="face">얼굴</option>
+                <option value="eyes">눈</option>
+            </select>
+            <input type="text" id="motionLabel" name="motionLabel" placeholder="동작 이름 (예: 안녕하세요)" required />
+        </div>
+
+        <div style="margin-top:18px; display:flex; flex-direction:column; align-items:center;">
+            <video id="preview" width="360" height="270" controls autoplay muted playsinline></video>
+
+            <div class="row" style="margin-top:10px;">
+                <button type="button" id="startBtn" class="alt">녹화 시작</button>
+                <button type="button" id="stopBtn" class="warn" disabled>녹화 종료</button>
+                <button type="button" id="resetBtn" disabled>재촬영</button>
+            </div>
+
+            <div id="trimControls" style="margin-top:12px; display:none;">
+                <label>시작(초):
+                    <input type="number" id="trimStart" min="0" value="0" step="0.1" style="width:80px;" />
+                </label>
+                <label>종료(초):
+                    <input type="number" id="trimEnd" min="0" value="0" step="0.1" style="width:80px;" />
+                </label>
+                <button type="button" id="trimFinishBtn" style="margin-left:8px;">Trim Finish</button>
+                <div class="hint">슬라이더 값 변경 후 미리보기는 자동 재생됩니다.</div>
+            </div>
+        </div>
+
+        <button id="uploadButton" type="submit" style="margin-top:16px;">업로드</button>
+        <div class="hint">로컬에서는 파일을 직접 열지 말고, <code>http://localhost:8080</code>처럼 <strong>HTTP 서버</strong>에서 실행하세요.</div>
+    </form>
+
+    <div class="status-container">
+        <div id="status">상태: 대기 중</div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const statusDiv = document.getElementById('status');
+        const preview = document.getElementById('preview');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn  = document.getElementById('stopBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const uploadBtn = document.getElementById('uploadButton');
+        const form = document.getElementById('uploadForm');
+        const trimControls = document.getElementById('trimControls');
+        const trimStart = document.getElementById('trimStart');
+        const trimEnd = document.getElementById('trimEnd');
+
+        // ---- Config
+        const API_GATEWAY_URL = "http://localhost:13000"; // 필요 시 변경
+
+        // ---- State
+        let mediaRecorder, recordedBlobs = [], stream, videoURL, videoDuration = 0;
+
+        function enable(el, v = true) { el.disabled = !v; }
+        function revokeURLSafe(url) { if (url) URL.revokeObjectURL(url); }
+
+        // ---- Recording
+        startBtn.onclick = async () => {
+            try {
+                recordedBlobs = [];
+                revokeURLSafe(videoURL); videoURL = null;
+
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+                    audio: true
+                });
+                preview.srcObject = stream;
+
+                const options = { mimeType: 'video/webm; codecs=vp9,opus' };
+                try {
+                    mediaRecorder = new MediaRecorder(stream, options);
+                } catch {
+                    mediaRecorder = new MediaRecorder(stream);
+                }
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) recordedBlobs.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const superBuffer = new Blob(recordedBlobs, { type: 'video/webm' });
+                    videoURL = URL.createObjectURL(superBuffer);
+                    preview.srcObject = null;
+                    preview.src = videoURL;
+                    preview.controls = true;
+
+                    trimControls.style.display = 'block';
+                    preview.onloadedmetadata = () => {
+                        videoDuration = preview.duration || 0;
+                        if (!videoDuration || !isFinite(videoDuration)) {
+                            setTimeout(() => {
+                                videoDuration = preview.duration || 0;
+                                trimEnd.value = (videoDuration || 0).toFixed(1);
+                                trimEnd.max = (videoDuration || 0).toFixed(1);
+                            }, 300);
+                        } else {
+                            if (trimEnd.value === "0") trimEnd.value = videoDuration.toFixed(1);
+                            trimEnd.max = videoDuration.toFixed(1);
+                        }
+                    };
+
+                    enable(resetBtn, true);
+                };
+
+                mediaRecorder.start();
+                enable(startBtn, false);
+                enable(stopBtn, true);
+                enable(uploadBtn, false);
+                trimControls.style.display = 'none';
+                statusDiv.textContent = "녹화 중...";
+            } catch (err) {
+                console.error(err);
+                statusDiv.textContent = "카메라/마이크 권한 필요 또는 장치 접근 실패.";
+            }
+        };
+
+        stopBtn.onclick = () => {
+            try {
+                mediaRecorder?.stop();
+                stream?.getTracks()?.forEach(t => t.stop());
+                enable(startBtn, true);
+                enable(stopBtn, false);
+                enable(uploadBtn, true);
+                statusDiv.textContent = "녹화 종료. 트리밍 가능.";
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        resetBtn.onclick = () => {
+            try {
+                recordedBlobs = [];
+                videoDuration = 0;
+                trimStart.value = "0";
+                trimEnd.value = "0";
+                trimControls.style.display = 'none';
+
+                preview.pause();
+                preview.removeAttribute('src');
+                preview.srcObject = null;
+                revokeURLSafe(videoURL); videoURL = null;
+
+                enable(uploadBtn, true);
+                enable(stopBtn, false);
+                enable(startBtn, true);
+                enable(resetBtn, false);
+
+                statusDiv.textContent = "재촬영 준비 완료.";
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        // ---- Upload
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+
+            const label = document.getElementById('motionLabel').value?.trim();
+            const detectionArea = document.getElementById('detectionArea').value;
+            const trimStartVal = trimStart.value;
+            const trimEndVal = trimEnd.value;
+
+            if (!label) {
+                statusDiv.textContent = "동작 이름을 입력해주세요.";
+                return;
+            }
+            if (!videoURL || !recordedBlobs?.length) {
+                statusDiv.textContent = "녹화 영상을 준비해주세요.";
+                return;
+            }
+
+            try {
+                statusDiv.textContent = "업로드 중...";
+                enable(uploadBtn, false);
+
+                const uploadBlob = new Blob(recordedBlobs, { type: 'video/webm' });
+                const formData = new FormData();
+                formData.append('motionLabel', label);
+                formData.append('detectionArea', detectionArea);
+                formData.append('videoFile', uploadBlob, 'motion.webm');
+                formData.append('trimStart', trimStartVal);
+                formData.append('trimEnd', trimEndVal);
+
+                const response = await fetch(`${API_GATEWAY_URL}/motions/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.text();
+                    statusDiv.textContent = `업로드 성공: ${result}`;
+                } else {
+                    statusDiv.textContent = `서버 오류: ${response.status}`;
+                }
+            } catch (error) {
+                console.error(error);
+                statusDiv.textContent = "업로드 중 오류가 발생했습니다. CORS/네트워크를 확인하세요.";
+            } finally {
+                enable(uploadBtn, true);
+            }
+        };
+    });
+</script>
+</body>
+</html>

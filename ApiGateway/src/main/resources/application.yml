@@ -8,7 +8,10 @@ spring:
     active: dev
   config:
     import: "optional:configserver:http://localhost:8888/"
-
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
   cloud:
     gateway:
       routes:
@@ -26,4 +29,3 @@ spring:
 logging:
   level:
     root: INFO
-
