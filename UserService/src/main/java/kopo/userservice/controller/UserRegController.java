@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Tag(name = "회원가입을 위한 API", description = "회원가입을 위한 API 설명입니다.")
@@ -32,6 +33,10 @@ public class UserRegController {
 
     @Autowired
     private RedisUtil redisUtil;
+    @Autowired
+    private kopo.userservice.repository.PatientRepository patientRepository;
+    @Autowired
+    private kopo.userservice.repository.ManagerRepository managerRepository;
 
     @Operation(summary = "환자 회원가입 API", description = "환자 회원가입 API",
             responses = {
@@ -376,5 +381,46 @@ public class UserRegController {
         }
 
         return MsgDTO.builder().result(result).msg(msg).build();
+    }
+
+    @PostMapping("/find/resetPassword")
+    public Map<String, Object> resetPassword(@RequestBody Map<String, String> req) {
+        String userId = req.get("user_id");
+        String email = req.get("email");
+        String newPassword = req.get("new_password");
+        String role = req.get("role"); // "patient" 또는 "manager"
+        Map<String, Object> result = new HashMap<>();
+
+        String encryptedEmail = "";
+        try {
+            encryptedEmail = EncryptUtil.encAES128CBC(email);
+        } catch (Exception e) {
+            result.put("result", 0);
+            result.put("msg", "이메일 암호화 오류: " + e.getMessage());
+            return result;
+        }
+        boolean success = false;
+        if ("manager".equalsIgnoreCase(role)) {
+            kopo.userservice.model.ManagerDocument manager = managerRepository.findByIdAndEmail(userId, encryptedEmail);
+            if (manager != null) {
+                manager.setPw(bCryptPasswordEncoder.encode(newPassword));
+                managerRepository.save(manager);
+                success = true;
+            }
+        } else {
+            kopo.userservice.model.PatientDocument patient = patientRepository.findByIdAndEmail(userId, encryptedEmail);
+            if (patient != null) {
+                patient.setPw(bCryptPasswordEncoder.encode(newPassword));
+                patientRepository.save(patient);
+                success = true;
+            }
+        }
+        if (success) {
+            result.put("result", 1);
+        } else {
+            result.put("result", 0);
+            result.put("msg", "일치하는 회원 정보가 없습니다.");
+        }
+        return result;
     }
 }
