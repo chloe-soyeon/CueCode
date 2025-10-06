@@ -17,4 +17,10 @@ public interface IUserService {
      * @return 인증된 사용자(PatientDTO 또는 ManagerDTO), 실패 시 null
      */
     Object login(String userId, String password);
+    /**
+     * 아이디 중복 여부 확인
+     */
+    boolean existsUserId(String userId);
+    // 이메일 인증 코드 전송
+    int sendEmailAuthCode(String email) throws Exception;
 }
