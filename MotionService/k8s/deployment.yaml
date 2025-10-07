@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: motion-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: motion-service
+  template:
+    metadata:
+      labels:
+        app: motion-service
+    spec:
+      containers:
+      - name: app # devspace.yaml에서 이 이름을 사용합니다.
+        # devspace가 이 이미지를 개발용 이미지로 교체하므로, 초기 이미지는 중요하지 않습니다.
+        image: openjdk:17-jdk-slim 
+        # devspace가 attach하기 전까지 컨테이너가 종료되지 않도록 유지합니다.
+        command: ["tail", "-f", "/dev/null"]
+        envFrom:
+        - secretRef:
+            name: motion-db-secret
+        ports:
+        - containerPort: 15000
