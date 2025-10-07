@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service-deployment
+spec:
+  replicas: 2 # 핵심 서비스이므로 2개의 파드를 실행하여 안정성을 높입니다.
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+      - name: user-service-app
+        image: <NCP Container Registry 주소>/user-service:latest
+        ports:
+        - containerPort: 11000
+        envFrom:
+        - secretRef:
+            # UserService의 데이터베이스 접속 정보를 담은 Secret
+            name: user-db-secret
