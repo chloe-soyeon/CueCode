@@ -283,7 +283,7 @@ function submitForm() {
         .then(text => {
             if (text.includes('1') || text.includes('회원가입 성공')) {
                 document.getElementById('msg').textContent = '회원가입 성공! 로그인 페이지로 이동합니다.';
-                setTimeout(function(){ window.location.href = '/login'; }, 1200);
+                setTimeout(function(){ window.location.href = '/user/sign-in.html'; }, 1200);
             } else {
                 document.getElementById('msg').textContent = text;
             }
