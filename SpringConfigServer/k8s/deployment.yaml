@@ -17,6 +17,25 @@ spec:
         image: cuecode.kr.ncr.ntruss.com/config-server:latest
         ports:
         - containerPort: 8888
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+          limits:
+            cpu: "250m"
+            memory: "512Mi"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8888
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8888
+          initialDelaySeconds: 30
+          periodSeconds: 15
         volumeMounts:
         - name: git-ssh-key
           mountPath: /root/.ssh # 컨테이너의 ssh 키 경로에 볼륨을 마운트합니다.

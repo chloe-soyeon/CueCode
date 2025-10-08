@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: motion-service
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: motion-service
@@ -13,13 +13,29 @@ spec:
         app: motion-service
     spec:
       containers:
-      - name: app # devspace.yaml에서 이 이름을 사용합니다.
-        # devspace가 이 이미지를 개발용 이미지로 교체하므로, 초기 이미지는 중요하지 않습니다.
-        image: cuecode.kr.ncr.ntruss.com/motion-service:latest 
-        # devspace가 attach하기 전까지 컨테이너가 종료되지 않도록 유지합니다.
-        command: ["tail", "-f", "/dev/null"]
+      - name: app
+        image: cuecode.kr.ncr.ntruss.com/motion-service:latest
         envFrom:
         - secretRef:
             name: motion-db-secret
         ports:
         - containerPort: 15000
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 15000
+          initialDelaySeconds: 30 # 시작 시 시간이 더 걸릴 수 있으므로 여유있게 설정
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 15000
+          initialDelaySeconds: 60
+          periodSeconds: 15
