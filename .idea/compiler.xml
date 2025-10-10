@@ -3,7 +3,31 @@
   <component name="CompilerConfiguration">
     <annotationProcessing>
       <profile default="true" name="Default" enabled="true" />
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.38/57f8f5e02e92a30fd21b80cbd426a4172b5f8e29/lombok-1.18.38.jar" />
+        </processorPath>
+        <module name="UserService.main" />
+      </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="ApiGateway" target="17" />
+      <module name="ApiGateway.main" target="17" />
+      <module name="ApiGateway.test" target="17" />
+      <module name="FrontUI" target="17" />
+      <module name="FrontUI.main" target="17" />
+      <module name="FrontUI.test" target="17" />
+      <module name="MotionService" target="17" />
+      <module name="MotionService.main" target="17" />
+      <module name="MotionService.test" target="17" />
+      <module name="SpringConfigServer" target="17" />
+      <module name="SpringConfigServer.main" target="17" />
+      <module name="SpringConfigServer.test" target="17" />
+      <module name="UserService" target="17" />
+      <module name="UserService.main" target="17" />
+      <module name="UserService.test" target="17" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">

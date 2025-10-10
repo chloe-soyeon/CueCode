@@ -3,7 +3,7 @@ $(function () {
     // Header Scroll
     $(window).scroll(function () {
         if ($(window).scrollTop() >= 60) {
-            $("header").addClass("fixed-header");
+            $("header").addClass("fixed-header").hide().fadeIn(300);
         } else {
             $("header").removeClass("fixed-header");
         }
@@ -15,11 +15,12 @@ $(function () {
         center: true,
         loop: true,
         margin: 30,
-        nav: false,
-        dots: false,
+        nav: true, // Enabled navigation buttons
+        navText: ["<span class='nav-btn prev-slide'>&#10094;</span>", "<span class='nav-btn next-slide'>&#10095;</span>"],
+        dots: true, // Enabled dots for better navigation
         autoplay: true,
         autoplayTimeout: 5000,
-        autoplayHoverPause: false,
+        autoplayHoverPause: true, // Pause on hover for better UX
         responsive: {
             0: {
                 items: 1
@@ -42,8 +43,8 @@ $(function () {
 		$(this).prop('Counter', 0).animate({
 			Counter: $(this).text()
 		}, {
-			duration: 1000,
-			easing: 'swing',
+			duration: 1500, // Increased duration for smoother animation
+			easing: 'linear', // Changed easing for consistent speed
 			step: function (now) {
 				$(this).text(Math.ceil(now));
 			}
@@ -78,4 +79,3 @@ $(function () {
 	});
 
 });
-
