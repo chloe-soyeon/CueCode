@@ -13,7 +13,7 @@ phases:
       - echo "Installing dependencies..."
       # Docker 로그인 (NCP_CR_AUTH_TOKEN 환경 변수는 DevTools Build 프로젝트 설정에서 주입되어야 합니다.)
       - echo "Logging in to Naver Cloud Container Registry..."
-      - docker login -u _json_key -p ${NCP_CR_AUTH_TOKEN} ${NCP_CR_URL}
+      - docker login -u ${NCP_CR_ACCESS_KEY_ID} -p ${NCP_CR_SECRET_KEY} ${NCP_CR_URL}
 
   pre_build:
     commands:
