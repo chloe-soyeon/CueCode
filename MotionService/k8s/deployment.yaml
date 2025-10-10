@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: motion-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: motion-service
+  template:
+    metadata:
+      labels:
+        app: motion-service
+    spec:
+      containers:
+      - name: app
+        image: cuecode.kr.ncr.ntruss.com/motion-service:latest
+        envFrom:
+        - secretRef:
+            name: motion-db-secret
+        ports:
+        - containerPort: 15000
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 15000
+          initialDelaySeconds: 30 # 시작 시 시간이 더 걸릴 수 있으므로 여유있게 설정
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 15000
+          initialDelaySeconds: 60
+          periodSeconds: 15

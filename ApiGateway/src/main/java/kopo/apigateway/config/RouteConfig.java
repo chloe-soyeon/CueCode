@@ -48,6 +48,19 @@ public class RouteConfig {
                         .filters(f -> f.rewritePath("/motion", "/motion/motion-detector.html"))
                         .uri("http://localhost:14000"))
 
+                // Motion-upload 페이지 라우팅
+                .route("front-ui-motion-upload", r -> r
+                        .path("/motion/upload")
+                        .and()
+                        .method(HttpMethod.GET)
+                        .filters(f -> f.rewritePath("/motion/upload", "/motion/motion-upload.html"))
+                        .uri("http://localhost:14000"))
+
+                // Vendor static assets (e.g., FFmpeg)
+                .route("front-ui-vendor-assets", r -> r
+                        .path("/vendor/**")
+                        .uri("http://localhost:14000"))
+
                 // UserService가 처리하는 로그인 POST 요청을 라우팅합니다.
                 .route("user-service-login-post", r -> r
                         .path("/login")
@@ -75,6 +88,7 @@ public class RouteConfig {
                 .route("manager-service", r -> r
                         .path("/manager/**")
                         .uri("http://localhost:11000"))
+
                 .build();
     }
 }

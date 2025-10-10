@@ -1,0 +1,44 @@
+// Patient Dashboard 스타일 개선
+.patient-dashboard {
+    background: var(--bs-light-gray);
+    min-height: 100vh;
+    padding: $spacer * 3;
+
+    .custom-card {
+        background: var(--bs-white);
+        border: 1px solid var(--bs-gray-200);
+        border-radius: $spacer;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+        &:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+    }
+
+    #tutorial-bar {
+        background: #FFF9C4; // 노란색 파스텔 계열
+        color: #795548; // 텍스트 색상
+        font-size: 1.2rem;
+        font-weight: bold;
+        text-align: center;
+        padding: $spacer;
+        border-radius: $spacer / 2;
+        animation: fadeInDown 0.5s ease-in-out;
+    }
+
+    #action-recognition,
+    #action-upload,
+    #settings {
+        background: #BBDEFB; // 파란색 계열
+        color: #0D47A1; // 텍스트 색상
+    }
+
+    .btn {
+        @extend .btn-outline-light;
+        padding: $spacer / 2 $spacer;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+}

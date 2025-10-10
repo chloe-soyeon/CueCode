@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service-deployment
+spec:
+  replicas: 2 # 핵심 서비스이므로 2개의 파드를 실행하여 안정성을 높입니다.
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+      - name: user-service-app
+        image: cuecode.kr.ncr.ntruss.com/user-service:latest
+        ports:
+        - containerPort: 11000
+        envFrom:
+        - secretRef:
+            # UserService의 데이터베이스 접속 정보를 담은 Secret
+            name: user-db-secret
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 11000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 11000
+          initialDelaySeconds: 40
+          periodSeconds: 15

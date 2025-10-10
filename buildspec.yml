@@ -1,0 +1,111 @@
+version: 0.2
+
+env:
+  variables:
+    NCP_CR_URL: "cuecode.kr.ncr.ntruss.com"
+  parameter-store:
+    KUBECONFIG_B64: "/my-app/kubeconfig-b64"
+
+phases:
+  install:
+    commands:
+      - echo "Installing ncp-iam-authenticator..."
+      - curl -o ncp-iam-authenticator -L https://github.com/NaverCloudPlatform/ncp-iam-authenticator/releases/latest/download/ncp-iam-authenticator_linux_amd64
+      - chmod +x ./ncp-iam-authenticator
+      - mv ./ncp-iam-authenticator /usr/local/bin/
+      - echo "Logging in to Naver Cloud Container Registry..."
+      - docker login -u ${NCP_CR_ACCESS_KEY_ID} -p ${NCP_CR_SECRET_KEY} ${NCP_CR_URL}
+
+  pre_build:
+    commands:
+      - echo "Detecting changed services..."
+      - export IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-8)
+      - echo "Using Image Tag: $IMAGE_TAG"
+      - |
+        CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+        echo "Changed files: $CHANGED_FILES"
+        if echo "$CHANGED_FILES" | grep -q "ApiGateway/"; then export BUILD_APIGATEWAY="true"; fi
+        if echo "$CHANGED_FILES" | grep -q "FrontUI/"; then export BUILD_FRONTUI="true"; fi
+        if echo "$CHANGED_FILES" | grep -q "MotionService/"; then export BUILD_MOTIONSERVICE="true"; fi
+        if echo "$CHANGED_FILES" | grep -q "SpringConfigServer/"; then export BUILD_CONFIGSERVER="true"; fi
+        if echo "$CHANGED_FILES" | grep -q "UserService/"; then export BUILD_USERSERVICE="true"; fi
+        if echo "$CHANGED_FILES" | grep -q "CueCodeMotion/"; then export BUILD_CUECODEMOTION="true"; fi
+
+  build:
+    commands:
+      - echo "Starting Docker builds and pushes for changed services..."
+      - |
+        if [ "$BUILD_APIGATEWAY" = "true" ]; then
+          echo "Building and pushing ApiGateway image..."
+          docker build -t ${NCP_CR_URL}/api-gateway:${IMAGE_TAG} ./ApiGateway
+          docker push ${NCP_CR_URL}/api-gateway:${IMAGE_TAG}
+        fi
+      - |
+        if [ "$BUILD_FRONTUI" = "true" ]; then
+          echo "Building and pushing FrontUI image..."
+          docker build -t ${NCP_CR_URL}/front-ui:${IMAGE_TAG} ./FrontUI
+          docker push ${NCP_CR_URL}/front-ui:${IMAGE_TAG}
+        fi
+      - |
+        if [ "$BUILD_MOTIONSERVICE" = "true" ]; then
+          echo "Building and pushing MotionService image..."
+          docker build -t ${NCP_CR_URL}/motion-service:${IMAGE_TAG} ./MotionService
+          docker push ${NCP_CR_URL}/motion-service:${IMAGE_TAG}
+        fi
+      - |
+        if [ "$BUILD_CONFIGSERVER" = "true" ]; then
+          echo "Building and pushing SpringConfigServer image..."
+          docker build -t ${NCP_CR_URL}/config-server:${IMAGE_TAG} ./SpringConfigServer
+          docker push ${NCP_CR_URL}/config-server:${IMAGE_TAG}
+        fi
+      - |
+        if [ "$BUILD_USERSERVICE" = "true" ]; then
+          echo "Building and pushing UserService image..."
+          docker build -t ${NCP_CR_URL}/user-service:${IMAGE_TAG} ./UserService
+          docker push ${NCP_CR_URL}/user-service:${IMAGE_TAG}
+        fi
+      - |
+        if [ "$BUILD_CUECODEMOTION" = "true" ]; then
+          echo "Building and pushing CueCodeMotion image..."
+          docker build -t ${NCP_CR_URL}/cuecode-motion:${IMAGE_TAG} ./CueCodeMotion
+          docker push ${NCP_CR_URL}/cuecode-motion:${IMAGE_TAG}
+        fi
+
+  post_build:
+    commands:
+      - echo "Updating deployment YAMLs for changed services..."
+      - |
+        if [ "$BUILD_APIGATEWAY" = "true" ]; then
+          echo "Updating ApiGateway deployment YAML..."
+          sed -i "s|image:.*|image: ${NCP_CR_URL}/api-gateway:${IMAGE_TAG}|" ./ApiGateway/k8s/deployment.yaml
+        fi
+      - |
+        if [ "$BUILD_FRONTUI" = "true" ]; then
+          echo "Updating FrontUI deployment YAML..."
+          sed -i "s|image:.*|image: ${NCP_CR_URL}/front-ui:${IMAGE_TAG}|" ./FrontUI/k8s/deployment.yaml
+        fi
+      - |
+        if [ "$BUILD_MOTIONSERVICE" = "true" ]; then
+          echo "Updating MotionService deployment YAML..."
+          sed -i "s|image:.*|image: ${NCP_CR_URL}/motion-service:${IMAGE_TAG}|" ./MotionService/k8s/deployment.yaml
+        fi
+      - |
+        if [ "$BUILD_CONFIGSERVER" = "true" ]; then
+          echo "Updating SpringConfigServer deployment YAML..."
+          sed -i "s|image:.*|image: ${NCP_CR_URL}/config-server:${IMAGE_TAG}|" ./SpringConfigServer/k8s/deployment.yaml
+        fi
+      - |
+        if [ "$BUILD_USERSERVICE" = "true" ]; then
+          echo "Updating UserService deployment YAML..."
+          sed -i "s|image:.*|image: ${NCP_CR_URL}/user-service:${IMAGE_TAG}|" ./UserService/k8s/deployment.yaml
+        fi
+      - |
+        if [ "$BUILD_CUECODEMOTION" = "true" ]; then
+          echo "Updating CueCodeMotion deployment YAML..."
+          sed -i "s|image:.*|image: ${NCP_CR_URL}/cuecode-motion:${IMAGE_TAG}|" ./CueCodeMotion/k8s/deployment.yaml
+        fi
+
+artifacts:
+  files:
+    - '**/*/k8s/*.yaml'
+  discard-paths: yes

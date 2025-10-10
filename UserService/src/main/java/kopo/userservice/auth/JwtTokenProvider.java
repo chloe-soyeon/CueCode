@@ -38,13 +38,14 @@ public class JwtTokenProvider {
     @Value("${jwt.token.refresh.name}")        private String refreshTokenName;
 
     /** JWT 생성 */
-    public String createToken(String userId, String role, String managerId, JwtTokenType tokenType) {
+    public String createToken(String userId, String userName, String role, String managerId, JwtTokenType tokenType) {
 
         long validSec = (tokenType == JwtTokenType.ACCESS_TOKEN) ? accessValidSec : refreshValidSec;
 
         Claims claims = Jwts.claims()
                 .setIssuer(creator)
                 .setSubject(userId);          // PK
+        claims.put("userName", userName);   // 사용자 이름 추가
         claims.put("roles", role);           // MANAGER / PATIENT (roles로 수정)
         claims.put("managerId", managerId);  // managerId 클레임 추가
 
@@ -59,7 +60,7 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    /** 토큰에서 userId/role 추출 */
+    /** 토큰에서 userId/role/userName 추출 */
     public TokenDTO getTokenInfo(String token) {
         SecretKey secret = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKeyBase64));
         Claims claims = Jwts.parserBuilder().setSigningKey(secret).build()
@@ -67,6 +68,7 @@ public class JwtTokenProvider {
 
         return TokenDTO.builder()
                 .userId(CmmUtil.nvl(claims.getSubject()))
+                .userName(CmmUtil.nvl((String) claims.get("userName"))) // 사용자 이름 추출
                 .role(CmmUtil.nvl((String) claims.get("roles"))) // "role" → "roles"로 수정
                 .build();
     }

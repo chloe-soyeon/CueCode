@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import java.util.Optional;
 
-@Tag(name = "로그인 관련 API", description = "로그인 관련 API 설명입니다.")
+@Tag(name = "로그인 관련 API", description = "로그인 관련 API 설명입��다.")
 @Slf4j
 @RequestMapping(value = "/login")
 @RequiredArgsConstructor
@@ -74,7 +74,7 @@ public class LoginController {
         log.info("managerId : {}", managerId); // managerId 값 로그 추가
 
         // Access Token 생성
-        String accessToken = jwtTokenProvider.createToken(userId, userRoles, managerId, JwtTokenType.ACCESS_TOKEN);
+        String accessToken = jwtTokenProvider.createToken(userId, userName, userRoles, managerId, JwtTokenType.ACCESS_TOKEN);
         log.info("accessToken : {}", accessToken);
 
         ResponseCookie cookie = ResponseCookie.from(accessTokenName, accessToken)
@@ -86,7 +86,7 @@ public class LoginController {
         response.setHeader("Set-Cookie", cookie.toString());
 
         // Refresh Token 생성
-        String refreshToken = jwtTokenProvider.createToken(userId, userRoles, managerId, JwtTokenType.REFRESH_TOKEN);
+        String refreshToken = jwtTokenProvider.createToken(userId, userName, userRoles, managerId, JwtTokenType.REFRESH_TOKEN);
         log.info("refreshToken : {}", refreshToken);
         cookie = ResponseCookie.from(refreshTokenName, refreshToken)
                 .domain("localhost")
@@ -161,7 +161,7 @@ public class LoginController {
         Object userDto = userService.login(loginRequest.getUserId(), loginRequest.getPassword());
         if (userDto == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return MsgDTO.builder().result(0).msg("로그인 실패: 아이디 또는 비밀번호가 올바르지 않습니다.").build();
+            return MsgDTO.builder().result(0).msg("로그인 실패: 아이디 또는 비밀번호가 올바르지 않습니���.").build();
         }
         String userId = "";
         String userName = "";
@@ -178,16 +178,16 @@ public class LoginController {
             managerId = CmmUtil.nvl(dto.id()); // managerId 값 추출
         }
         // JWT 토큰 생성 및 쿠키 설정
-        String accessToken = jwtTokenProvider.createToken(userId, userRoles, managerId, JwtTokenType.ACCESS_TOKEN);
+        String accessToken = jwtTokenProvider.createToken(userId, userName, userRoles, managerId, JwtTokenType.ACCESS_TOKEN);
         log.info("JWT 생성: userId={}, roles={}", userId, userRoles);
         ResponseCookie cookie = ResponseCookie.from(accessTokenName, accessToken)
                 .domain("localhost")
                 .path("/")
                 .maxAge(accessTokenValidTime)
-                .httpOnly(true)
+                .httpOnly(false)
                 .build();
         response.setHeader("Set-Cookie", cookie.toString());
-        String refreshToken = jwtTokenProvider.createToken(userId, userRoles, managerId, JwtTokenType.REFRESH_TOKEN);
+        String refreshToken = jwtTokenProvider.createToken(userId, userName, userRoles, managerId, JwtTokenType.REFRESH_TOKEN);
         cookie = ResponseCookie.from(refreshTokenName, refreshToken)
                 .domain("localhost")
                 .path("/")
@@ -195,6 +195,7 @@ public class LoginController {
                 .httpOnly(true)
                 .build();
         response.addHeader("Set-Cookie", cookie.toString());
-        return MsgDTO.builder().result(1).msg(userName + "님 로그인이 성공하였습니다.").build();
+        // accessToken을 응답 JSON에 포함
+        return MsgDTO.builder().result(1).msg(userName + "님 로그인이 성공하였습니다.").accessToken(accessToken).build();
     }
 }
