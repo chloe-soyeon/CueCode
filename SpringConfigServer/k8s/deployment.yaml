@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: config-server-app
-        image: cuecode.kr.ncr.ntruss.com/config-server:${IMAGE_TAG}
+        image: cuecode.kr.ncr.ntruss.com/config-server:latest
         ports:
         - containerPort: 8888
         resources:
