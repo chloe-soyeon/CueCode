@@ -1,5 +1,5 @@
 version: 0.2
-#
+
 env:
   variables:
     # ❗수정 필요: NCP 콘솔에서 확인한 Container Registry 주소를 입력하세요.
@@ -12,10 +12,17 @@ env:
 phases:
   install:
     commands:
+      # ncp-iam-authenticator 설치 (SourceBuild의 Linux 환경 기준)
+      - echo "Installing ncp-iam-authenticator..."
+      - curl -o ncp-iam-authenticator -L https://github.com/NaverCloudPlatform/ncp-iam-authenticator/releases/latest/download/ncp-iam-authenticator_linux_amd64
+      - chmod +x ./ncp-iam-authenticator
+      - mv ./ncp-iam-authenticator /usr/local/bin/
+
       # Kubeconfig 설정
       - echo "Configuring kubectl..."
       - echo $KUBECONFIG_B64 | base64 -d > /tmp/kubeconfig
       - export KUBECONFIG=/tmp/kubeconfig
+      
       # Docker 로그인
       - echo "Logging in to Naver Cloud Container Registry..."
       - docker login -u ${NCP_CR_ACCESS_KEY_ID} -p ${NCP_CR_SECRET_KEY} ${NCP_CR_URL}
