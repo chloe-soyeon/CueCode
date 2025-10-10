@@ -1,0 +1,104 @@
+version: 0.2
+
+env:
+  variables:
+    # 네이버 클라우드 컨테이너 레지스트리 URL (필요시 YOUR_PROJECT_ID 조정)
+    NCP_CR_URL: "cuecode.kr.ncr.ntruss.com"
+    # 이미지 태그 (latest 사용)
+    IMAGE_TAG: "latest"
+
+phases:
+  install:
+    commands:
+      - echo "Installing dependencies..."
+      # Docker 로그인 (NCP_CR_AUTH_TOKEN 환경 변수는 DevTools Build 프로젝트 설정에서 주입되어야 합니다.)
+      - echo "Logging in to Naver Cloud Container Registry..."
+      - docker login -u _json_key -p ${NCP_CR_AUTH_TOKEN} ${NCP_CR_URL}
+
+  pre_build:
+    commands:
+      - echo "Detecting changed services..."
+      # Git diff를 사용하여 변경된 서비스 감지
+      # HEAD^ HEAD는 이전 커밋과 현재 커밋 간의 차이를 비교합니다.
+      # 만약 첫 커밋이라면 HEAD^가 없을 수 있으므로 || true를 추가하여 오류 방지
+      - |
+        CHANGED_FILES=$(git diff --name-only HEAD^ HEAD || true)
+        echo "Changed files: $CHANGED_FILES"
+        
+        # 각 서비스 디렉토리에 변경이 있는지 확인
+        if echo "$CHANGED_FILES" | grep -q "ApiGateway/"; then export BUILD_APIGATEWAY="true"; fi
+        if echo "$CHANGED_FILES" | grep -q "FrontUI/"; then export BUILD_FRONTUI="true"; fi
+        if echo "$CHANGED_FILES" | grep -q "MotionService/"; then export BUILD_MOTIONSERVICE="true"; fi
+        if echo "$CHANGED_FILES" | grep -q "SpringConfigServer/"; then export BUILD_CONFIGSERVER="true"; fi
+        if echo "$CHANGED_FILES" | grep -q "UserService/"; then export BUILD_USERSERVICE="true"; fi
+
+  build:
+    commands:
+      - echo "Starting Docker builds and pushes..."
+
+      # ApiGateway 서비스 빌드 및 푸시
+      - |
+        if [ "$BUILD_APIGATEWAY" = "true" ]; then
+          echo "Building and pushing ApiGateway image..."
+          cd ApiGateway
+          # Dockerfile이 서비스 디렉토리 루트에 있다고 가정
+          docker build -t ${NCP_CR_URL}/api-gateway:${IMAGE_TAG} .
+          docker push ${NCP_CR_URL}/api-gateway:${IMAGE_TAG}
+          cd ..
+        else
+          echo "ApiGateway not changed, skipping build."
+        fi
+
+      # FrontUI 서비스 빌드 및 푸시
+      - |
+        if [ "$BUILD_FRONTUI" = "true" ]; then
+          echo "Building and pushing FrontUI image..."
+          cd FrontUI
+          docker build -t ${NCP_CR_URL}/front-ui:${IMAGE_TAG} .
+          docker push ${NCP_CR_URL}/front-ui:${IMAGE_TAG}
+          cd ..
+        else
+          echo "FrontUI not changed, skipping build."
+        fi
+
+      # MotionService 서비스 빌드 및 푸시
+      - |
+        if [ "$BUILD_MOTIONSERVICE" = "true" ]; then
+          echo "Building and pushing MotionService image..."
+          cd MotionService
+          docker build -t ${NCP_CR_URL}/motion-service:${IMAGE_TAG} .
+          docker push ${NCP_CR_URL}/motion-service:${IMAGE_TAG}
+          cd ..
+        else
+          echo "MotionService not changed, skipping build."
+        fi
+
+      # SpringConfigServer 서비스 빌드 및 푸시
+      - |
+        if [ "$BUILD_CONFIGSERVER" = "true" ]; then
+          echo "Building and pushing SpringConfigServer image..."
+          cd SpringConfigServer
+          docker build -t ${NCP_CR_URL}/config-server:${IMAGE_TAG} .
+          docker push ${NCP_CR_URL}/config-server:${IMAGE_TAG}
+          cd ..
+        else
+          echo "SpringConfigServer not changed, skipping build."
+        fi
+
+      # UserService 서비스 빌드 및 푸시
+      - |
+        if [ "$BUILD_USERSERVICE" = "true" ]; then
+          echo "Building and pushing UserService image..."
+          cd UserService
+          docker build -t ${NCP_CR_URL}/user-service:${IMAGE_TAG} .
+          docker push ${NCP_CR_URL}/user-service:${IMAGE_TAG}
+          cd ..
+        else
+          echo "UserService not changed, skipping build."
+        fi
+
+artifacts:
+  files:
+    # SourceDeploy가 사용할 k8s 매니페스트 파일들을 아티팩트로 포함
+    - '**/*/k8s/*.yaml'
+  discard-paths: yes # 아티팩트 경로에서 최상위 디렉토리 구조를 제거
