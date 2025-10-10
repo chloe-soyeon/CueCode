@@ -1,5 +1,5 @@
 version: 0.2
-
+#
 env:
   variables:
     # ❗수정 필요: NCP 콘솔에서 확인한 Container Registry 주소를 입력하세요.
